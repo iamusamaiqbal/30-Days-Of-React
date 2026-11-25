@@ -7,7 +7,7 @@
 <meta name="description" content="Mocha Muse: hand-painted Arabic calligraphy on canvas, and custom pieces painted to your verse, colours and size.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&family=Amiri:wght@400;700&family=Lalezar&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&family=Amiri:wght@400;700&family=Lalezar&family=Pinyon+Script&display=swap">
 <style>
 /* Layout: a daylit studio desk. Soft white cards on warm paper, round swatches, typewriter labels, and canvases that turn toward you when touched. */
 :root{
@@ -24,6 +24,7 @@
   --f-mono:"DM Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
   --f-ar:"Amiri","Noto Naskh Arabic","Geeza Pro",serif;
   --f-ar-bold:"Lalezar","Amiri","Geeza Pro",sans-serif;
+  --f-script:"Pinyon Script","Snell Roundhand","Brush Script MT",cursive;
   --gl:max(16px, env(safe-area-inset-left, 0px));
   --gr:max(16px, env(safe-area-inset-right, 0px));
   --side:clamp(0px,2.4vw,32px);
@@ -117,52 +118,81 @@ section{padding-block:clamp(56px,7vw,100px)}
 .mini.logo:hover .logo-mark{transform:rotate(-14deg) scale(1.05)}
 @media (max-width:700px){.row4{grid-template-columns:1fr;gap:10px}.mini{min-height:0;padding:18px;gap:6px}.mini b{font-size:32px}}
 
-/* ---------- kept: colour try-out + verses ---------- */
+/* ---------- design your canvas + verses ---------- */
 .pair{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:stretch}
-.tile{position:relative;border-radius:var(--r);overflow:hidden;background:#fff;box-shadow:var(--shadow);transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .5s;min-width:0}
-.tile:hover{transform:translateY(-4px);box-shadow:0 1px 0 rgba(35,24,18,.06),0 30px 50px -30px rgba(35,24,18,.5)}
-.t-vibe{grid-column:span 7;padding:28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:center;background:#fff}
-.t-vibe h3{margin:8px 0 10px;font:700 clamp(26px,2.4vw,38px)/1 var(--f-display);letter-spacing:-.02em}
-.t-vibe p{margin:0 0 16px;color:var(--muted)}
-.sw{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-.sw button{width:40px;height:40px;border-radius:50%;border:0;cursor:pointer;position:relative;background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.1);transition:transform .3s}
+.tile{position:relative;border-radius:var(--r);overflow:hidden;background:#fff;box-shadow:var(--shadow);transition:box-shadow .5s;min-width:0}
+.tabs{display:none;gap:4px;padding:4px;border-radius:999px;background:var(--paper-2);margin:0 auto 14px;width:max-content;max-width:100%}
+.tabs button{border:0;background:transparent;padding:10px 18px;border-radius:999px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted);transition:background .3s,color .3s}
+.tabs button[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:0 4px 12px -6px rgba(35,24,18,.35)}
+.t-design{grid-column:span 8;padding:24px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:24px;align-items:center}
+.t-design h3{margin:8px 0 6px;font:700 clamp(24px,2.2vw,34px)/1.05 var(--f-display);letter-spacing:-.02em}
+.t-design .sub{margin:0 0 14px;color:var(--muted);font-size:15px}
+.ctl{display:flex;flex-direction:column;gap:12px}
+.ctl .lab{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block}
+.sw{display:flex;flex-wrap:wrap;gap:8px}
+.sw button{width:34px;height:34px;border-radius:50%;border:0;cursor:pointer;background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.1);transition:transform .3s}
 .sw button:hover{transform:scale(1.1)}
-.sw button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}
-.phr{display:flex;flex-wrap:wrap;gap:6px}
-.phr button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 12px;font-size:13px;cursor:pointer;transition:background .3s,color .3s}
-.phr button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.preview{position:relative;aspect-ratio:4/5;width:min(100%,300px);margin:6px auto 18px;perspective:900px}
-.cv{position:absolute;inset:0;border-radius:6px;background:var(--cv-bg,#6e4129);color:var(--cv-fg,#f4e9dc);display:grid;place-items:center;text-align:center;padding:12%;
-  box-shadow:10px 14px 0 -2px rgba(0,0,0,.16),0 26px 44px -20px rgba(35,24,18,.6);transform:rotateY(-14deg) rotateX(4deg);transition:background .6s,color .6s,transform .8s cubic-bezier(.2,.8,.2,1)}
-.preview:hover .cv{transform:rotateY(0) rotateX(0)}
-.cv::before{content:"";position:absolute;inset:7%;border:1.5px solid currentColor;opacity:.35;border-radius:3px}
-.cv span{font-family:var(--f-ar-bold);font-size:clamp(34px,3.6vw,56px);line-height:1.3;direction:rtl}
-.cv small{position:absolute;bottom:9%;left:0;right:0;font:500 10px var(--f-mono);letter-spacing:.14em;opacity:.7}
-.t-verse{grid-column:span 5;background:var(--paper-2);padding:28px;display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:360px}
-.t-verse .big{font-family:var(--f-ar);font-size:clamp(28px,2.8vw,44px);line-height:1.5;direction:rtl;color:var(--mocha);min-height:2.2em}
-.t-verse .en{font:500 clamp(18px,1.5vw,22px)/1.35 var(--f-display);min-height:2.7em}
+.sw button[aria-pressed="true"]{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 12px;font-size:13px;cursor:pointer;transition:background .3s,color .3s,border-color .3s}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.words{display:flex;gap:6px;margin-top:6px}
+.words input{flex:1;min-width:0;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;font:500 15px var(--f-body);color:var(--ink)}
+.words input:focus{outline:2px solid var(--ochre);outline-offset:1px}
+.t-design .pill.dark{align-self:flex-start;margin-top:4px}
+/* the room */
+.room-wrap{display:flex;flex-direction:column;gap:10px;min-width:0}
+.room{position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;
+  background:radial-gradient(130% 90% at 15% -10%,rgba(255,255,255,.7),transparent 55%),linear-gradient(#efe8de 0%,#e3d8ca 77%,#b9906c 77.2%,#9e7656 100%)}
+.room::before{content:"";position:absolute;inset:0;background:linear-gradient(112deg,transparent 30%,rgba(255,251,242,.45) 42%,transparent 54%),linear-gradient(112deg,transparent 52%,rgba(255,251,242,.25) 60%,transparent 68%);pointer-events:none}
+.board{position:absolute;left:22%;right:22%;bottom:13%;height:13%;border-radius:4px;background:linear-gradient(#80563d,#5f3c29);box-shadow:0 14px 16px -8px rgba(40,22,10,.45)}
+.board::before,.board::after{content:"";position:absolute;bottom:-28%;width:4%;height:30%;background:#4a2e1f;border-radius:0 0 2px 2px}
+.board::before{left:6%}.board::after{right:6%}
+.vase{position:absolute;bottom:100%;left:10%;width:9%;aspect-ratio:3/5;background:linear-gradient(90deg,#d9ccb8,#efe6d8 45%,#cdbda6);border-radius:45% 45% 30% 30%}
+.vase::before{content:"";position:absolute;bottom:90%;left:48%;width:2px;height:150%;background:#6d5a3e;transform:rotate(-12deg);transform-origin:bottom}
+.vase::after{content:"";position:absolute;bottom:200%;left:10%;width:90%;aspect-ratio:1;border-radius:50% 0;background:#7d8a62;transform:rotate(-30deg)}
+.books{position:absolute;bottom:100%;right:10%;width:16%;height:22%;background:linear-gradient(#c7a27a 0 33%,#e9e0d2 33% 66%,#7a5038 66%);border-radius:2px}
+.art{position:absolute;left:50%;top:42%;width:var(--w,19%);aspect-ratio:var(--ar,4/5);transform:translate(-50%,-50%);transition:width .7s cubic-bezier(.2,.8,.2,1),aspect-ratio .7s;
+  box-shadow:3px 3px 0 color-mix(in srgb,var(--cv-bg,#6e4129) 62%,#000),9px 14px 18px rgba(40,22,10,.32)}
+.face{position:absolute;inset:0;background:var(--cv-bg,#6e4129);color:var(--cv-fg,#f4e9dc);display:grid;place-items:center;overflow:hidden;container-type:inline-size;transition:background .9s,color .9s}
+.face::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.55;mix-blend-mode:multiply;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.05) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(0,0,0,.05) 0 1px,transparent 1px 3px)}
+.face::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.4;mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.face .ink{position:relative;z-index:1;text-align:center;line-height:1.25;padding:0 9%;max-width:100%;overflow-wrap:anywhere;text-shadow:0 0 .5px currentColor;filter:drop-shadow(0 .5px 0 rgba(0,0,0,.15))}
+.face .ink.ar{font-family:var(--f-ar-bold);direction:rtl}
+.face .ink.lat{font-family:var(--f-script);line-height:1.1}
+.face .ink.paint{-webkit-mask-image:linear-gradient(var(--sweep,to left),#000 42%,transparent 58%);mask-image:linear-gradient(var(--sweep,to left),#000 42%,transparent 58%);-webkit-mask-size:280% 100%;mask-size:280% 100%;animation:paint 1.5s cubic-bezier(.45,.1,.3,1) forwards}
+@keyframes paint{from{-webkit-mask-position:100% 0;mask-position:100% 0}to{-webkit-mask-position:0 0;mask-position:0 0}}
+.room-cap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted)}
+.t-verse{grid-column:span 4;background:var(--paper-2);padding:28px;display:flex;flex-direction:column;justify-content:space-between;gap:18px}
+.t-verse .big{font-family:var(--f-ar);font-size:clamp(26px,2.4vw,40px);line-height:1.5;direction:rtl;color:var(--mocha);min-height:2.2em}
+.t-verse .en{font:500 clamp(17px,1.4vw,21px)/1.35 var(--f-display);min-height:2.7em}
 .t-verse .caret{display:inline-block;width:2px;height:1em;background:var(--ochre);vertical-align:-.15em;margin-inline:3px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 .t-verse .src{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .dots{display:flex;gap:6px}
 .dots i{width:7px;height:7px;border-radius:50%;background:rgba(35,24,18,.2);transition:background .3s,width .3s}
 .dots i.on{background:var(--mocha);width:20px;border-radius:4px}
-.pair-hint{display:none;justify-content:center;gap:8px;align-items:center;color:var(--muted);margin-top:2px}
-@media (max-width:1020px){.t-vibe,.t-verse{grid-column:span 12}.t-verse{min-height:300px}}
-@media (max-width:600px){
-  .pair{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;scrollbar-width:none;margin-inline:calc(-1 * (var(--gl) + var(--side))) calc(-1 * (var(--gr) + var(--side)));padding:6px calc(var(--gr) + var(--side)) 18px calc(var(--gl) + var(--side));overscroll-behavior-x:contain}
-  .pair::-webkit-scrollbar{display:none}
-  .pair>.tile{flex:none;width:86vw;scroll-snap-align:center}
-  .pair-hint{display:flex!important}
-  .t-vibe{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);padding:18px;gap:14px;align-items:start}
-  .t-vibe h3{font-size:24px}.t-vibe p{font-size:14px;margin-bottom:12px}
-  .sw button{width:32px;height:32px}
-  .preview{width:100%;margin:28px 0 0}
-  .cv span{font-size:30px}.cv small{font-size:8px}
-  .t-verse{padding:22px;min-height:0}
-  #vibe .head p{display:none}
+/* tablets, phones and short screens: two tabs instead of side by side */
+@media (max-width:1020px), (max-height:500px){
+  .tabs{display:flex}
+  .pair{display:block}
+  .pair[data-tab="design"] .t-verse,.pair[data-tab="verses"] .t-design{display:none}
+  .t-verse{min-height:min(60svh,440px)}
+  #vibe .head{display:none}
 }
-
+@media (max-width:700px){
+  .t-design{grid-template-columns:1fr;padding:16px;gap:14px}
+  .room-wrap{order:-1}
+  .room{aspect-ratio:16/10}
+  .t-design h3,.t-design .sub,.t-design .tag{display:none}
+  .ctl{gap:10px}.ctl .lab{margin-bottom:4px}
+  .sw button{width:30px;height:30px}
+  .chips button{padding:6px 10px;font-size:12px}
+  .t-verse{padding:22px}
+}
+@media (max-height:500px){ .t-design{grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:14px}.t-design h3,.t-design .sub{display:none}.room{aspect-ratio:16/10} }
 /* ---------- works ---------- */
 .shelf{overflow:hidden;margin-inline:calc(-1 * (var(--gl) + var(--side))) calc(-1 * (var(--gr) + var(--side)));padding-block:6px 30px;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
 .shelf.drag{cursor:grabbing}.shelf.drag .work{pointer-events:none}
@@ -238,11 +268,6 @@ footer .logo-mark{width:46px;height:46px}
   @keyframes rv{from{transform:translateY(36px)}to{transform:none}}
 }
 @media (max-height:500px){
-  .pair{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;scrollbar-width:none;margin-inline:calc(-1 * (var(--gl) + var(--side))) calc(-1 * (var(--gr) + var(--side)));padding:6px calc(var(--gr) + var(--side)) 14px calc(var(--gl) + var(--side))}
-  .pair::-webkit-scrollbar{display:none}
-  .pair>.tile{flex:none;width:min(86vw,620px);scroll-snap-align:center}
-  .pair-hint{display:flex!important}
-  .t-verse{min-height:0}.preview{width:min(100%,30svh)}
   #vibe .head p,#works .head p,#studio .head p{display:none}
   .screen{padding-block:calc(62px + env(safe-area-inset-top,0px)) 12px}
   .nav{top:calc(6px + env(safe-area-inset-top,0px))}
@@ -296,25 +321,35 @@ footer .logo-mark{width:46px;height:46px}
 
   <section class="pad screen" id="vibe">
     <div class="wrap">
-      <div class="head rv"><div><span class="tag mono">Make it yours</span><h2>Design it, <em>then we paint it.</em></h2></div><p>Every Mocha Muse canvas can be painted in your colours, with your words.</p></div>
-      <div class="pair">
-        <div class="tile t-vibe rv">
-          <div>
-            <span class="tag mono">Choose your vibe</span>
-            <h3>Try your colours</h3>
-            <p>Pick a palette and a phrase to see how a custom canvas could look.</p>
-            <div class="sw" id="sw" role="group" aria-label="Colour palette"></div>
-            <div class="phr" id="phr" role="group" aria-label="Phrase"></div>
+      <div class="head rv"><div><span class="tag mono">Make it yours</span><h2>Design it, <em>then we paint it.</em></h2></div><p>Pick the words, colours and size, and see your canvas on a wall before we paint it.</p></div>
+      <div class="tabs" role="tablist" aria-label="Design or verses">
+        <button type="button" role="tab" id="tabDesign" aria-selected="true" aria-controls="design">Design yours</button>
+        <button type="button" role="tab" id="tabVerses" aria-selected="false" aria-controls="verses">Verses we paint</button>
+      </div>
+      <div class="pair" id="pair" data-tab="design">
+        <div class="tile t-design rv" id="design" role="tabpanel" aria-labelledby="tabDesign">
+          <div class="ctl">
+            <div><span class="tag mono">Design your canvas</span><h3>See it on your wall</h3><p class="sub">Change anything and watch it paint.</p></div>
+            <div><span class="lab">Colours</span><div class="sw" id="sw" role="group" aria-label="Colour palette"></div></div>
+            <div><span class="lab">Words</span><div class="chips" id="phr" role="group" aria-label="Phrase"></div>
+              <div class="words"><label class="mono" for="cvInput" style="position:absolute;left:-9999px">Your own words</label><input id="cvInput" type="text" maxlength="28" placeholder="Or type a name or verse" autocomplete="off"></div></div>
+            <div><span class="lab">Size</span><div class="chips" id="sizes" role="group" aria-label="Canvas size"></div></div>
+            <a class="pill dark" id="designOrder" href="#order">Order this design <i>→</i></a>
           </div>
-          <div class="preview"><div class="cv" id="cv"><span id="cvText">بِسْمِ اللَّهِ</span><small id="cvName">MOCHA · 40 × 50 CM</small></div></div>
+          <div class="room-wrap">
+            <div class="room" aria-label="Preview of your canvas on a wall">
+              <div class="board"><span class="vase"></span><span class="books"></span></div>
+              <div class="art" id="art"><div class="face"><span class="ink ar" id="ink">بِسْمِ اللَّهِ</span></div></div>
+            </div>
+            <div class="room-cap mono"><span id="capName">Mocha · Bismillah</span><span id="capSize">40 × 50 cm</span></div>
+          </div>
         </div>
-        <div class="tile t-verse rv" aria-live="polite">
+        <div class="tile t-verse rv" id="verses" role="tabpanel" aria-labelledby="tabVerses" aria-live="polite">
           <span class="mono">Verses we paint</span>
           <div><div class="big" id="vAr"></div><div class="en" id="vEn"><span class="caret"></span></div></div>
           <div class="src"><span class="mono" id="vRef" style="color:var(--mocha)"></span><span class="dots" id="vDots"></span></div>
         </div>
       </div>
-      <div class="pair-hint mono">Swipe for verses we paint →</div>
     </div>
   </section>
 
@@ -448,14 +483,42 @@ async function typeVerse(){
 }
 typeVerse();
 
-/* ---------- colour try-out (kept) ---------- */
+/* ---------- design your canvas ---------- */
 const PALETTES=[["Mocha","#6e4129","#f4e9dc"],["Night & gold","#161110","#d9a84e"],["Violet","#5a3d78","#f3ecff"],["Sage","#7a876a","#f7f2e6"],["Rose clay","#cfa097","#3a2320"],["Ivory","#efe6d6","#5b3a26"]];
-const PHRASES=[["Bismillah","بِسْمِ اللَّهِ"],["Alhamdulillah","الْحَمْدُ لِلَّهِ"],["Ya Rahman","يَا رَحْمَٰن"],["Your name","اسمك هنا"]];
-const sw=$("#sw"), phr=$("#phr"), cv=$("#cv");
-PALETTES.forEach((p,i)=>{const b=document.createElement("button");b.type="button";b.style.setProperty("--a",p[1]);b.style.setProperty("--b",p[2]);b.setAttribute("aria-label",p[0]);b.setAttribute("aria-pressed",i===0);
-  b.onclick=()=>{[...sw.children].forEach((c,j)=>c.setAttribute("aria-pressed",j===i));cv.style.setProperty("--cv-bg",p[1]);cv.style.setProperty("--cv-fg",p[2]);$("#cvName").textContent=p[0].toUpperCase()+" · 40 × 50 CM";};sw.appendChild(b);});
-PHRASES.forEach((p,i)=>{const b=document.createElement("button");b.type="button";b.textContent=p[0];b.setAttribute("aria-pressed",i===0);
-  b.onclick=()=>{[...phr.children].forEach((c,j)=>c.setAttribute("aria-pressed",j===i));const t=$("#cvText");t.animate([{opacity:0,transform:"scale(.9)"},{opacity:1,transform:"none"}],{duration:450,easing:"ease-out"});t.textContent=p[1];};phr.appendChild(b);});
+const PHRASES=[["Bismillah","بِسْمِ اللَّهِ"],["Alhamdulillah","الْحَمْدُ لِلَّهِ"],["Ya Rahman","يَا رَحْمَٰن"],["Mashallah","مَا شَاءَ اللَّهُ"]];
+const SIZES=[["30 × 40 cm",15,"3/4"],["40 × 50 cm",19,"4/5"],["60 × 80 cm",27,"3/4"],["80 × 100 cm",33,"4/5"]];
+const sw=$("#sw"), phr=$("#phr"), sizes=$("#sizes"), art=$("#art"), ink=$("#ink"), face=art.querySelector(".face"), inp=$("#cvInput");
+const D={pal:0, words:PHRASES[0][1], label:PHRASES[0][0], size:1};
+const isArabic=t=>/[؀-ۿ]/.test(t);
+function fitInk(){ ink.style.fontSize=""; const W=face.clientWidth, H=face.clientHeight; if(!W) return;
+  let fs=W*(isArabic(D.words)?.3:.24); ink.style.fontSize=fs+"px";
+  for(let i=0;i<14 && (ink.scrollWidth>W*.86 || ink.offsetHeight>H*.8);i++){ fs*=.9; ink.style.fontSize=fs+"px"; } }
+function paint(){
+  ink.textContent=D.words; ink.className="ink "+(isArabic(D.words)?"ar":"lat");
+  ink.style.setProperty("--sweep",isArabic(D.words)?"to left":"to right");
+  fitInk();
+  if(!reduce){ void ink.offsetWidth; ink.classList.add("paint"); }
+  $("#capName").textContent=PALETTES[D.pal][0]+" · "+(D.label||D.words);
+  $("#capSize").textContent=SIZES[D.size][0];
+  const h=orderHref(`Hi Mocha Muse! I'd like a custom canvas: "${D.words}", ${PALETTES[D.pal][0]} colours, ${SIZES[D.size][0]}.`), o=$("#designOrder");
+  o.href=h||"#order"; if(h){o.target="_blank";o.rel="noopener";} else o.removeAttribute("target");
+}
+function press(group,i){ [...group.children].forEach((c,j)=>c.setAttribute("aria-pressed",j===i)); }
+PALETTES.forEach((p,i)=>{const b=document.createElement("button");b.type="button";b.style.setProperty("--a",p[1]);b.style.setProperty("--b",p[2]);b.setAttribute("aria-label",p[0]);
+  b.onclick=()=>{D.pal=i;press(sw,i);face.style.setProperty("--cv-bg",p[1]);face.style.setProperty("--cv-fg",p[2]);art.style.setProperty("--cv-bg",p[1]);paint();};sw.appendChild(b);});
+PHRASES.forEach((p,i)=>{const b=document.createElement("button");b.type="button";b.textContent=p[0];
+  b.onclick=()=>{D.words=p[1];D.label=p[0];inp.value="";press(phr,i);paint();};phr.appendChild(b);});
+SIZES.forEach((s,i)=>{const b=document.createElement("button");b.type="button";b.textContent=s[0].replace(" cm","");b.setAttribute("aria-label",s[0]);
+  b.onclick=()=>{D.size=i;press(sizes,i);art.style.setProperty("--w",s[1]+"%");art.style.setProperty("--ar",s[2]);setTimeout(fitInk,720);paint();};sizes.appendChild(b);});
+let typeT=0;
+inp.addEventListener("input",()=>{ clearTimeout(typeT); typeT=setTimeout(()=>{ const v=inp.value.trim(); if(!v) return; D.words=v; D.label=""; press(phr,-1); paint(); },450); });
+press(sw,0); press(phr,0); press(sizes,1);
+addEventListener("resize",fitInk); document.fonts&&document.fonts.ready.then(fitInk);
+/* tabs (tablets and phones) */
+const pair=$("#pair");
+[["#tabDesign","design"],["#tabVerses","verses"]].forEach(([id,t])=>$(id).addEventListener("click",()=>{
+  const dh=$("#design").offsetHeight; if(t==="verses" && dh) $("#verses").style.minHeight=dh+"px";
+  pair.dataset.tab=t; $("#tabDesign").setAttribute("aria-selected",t==="design"); $("#tabVerses").setAttribute("aria-selected",t==="verses"); if(t==="design") fitInk(); }));
 
 /* ---------- works: endless shelf that drifts, follows your gestures, and stops on a card ---------- */
 const shelf=$("#shelf"), track=$("#track");
@@ -579,7 +642,7 @@ function fitScreens(pairs){
       const over=cont.getBoundingClientRect().height-innerHeight;
       if(over<=1) break;
       const h=f.getBoundingClientRect().height; if(h<=over) break;
-      z=Math.max(.4,z*(h-over)/h); f.style.zoom=z.toFixed(3);
+      z=Math.max(.4,z*(h-over-3)/h); f.style.zoom=z.toFixed(3);
     }
   });
 }

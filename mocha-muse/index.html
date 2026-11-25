@@ -691,7 +691,7 @@ function fitScreens(pairs){
       const over=cont.getBoundingClientRect().height-innerHeight;
       if(over<=1) break;
       const h=f.getBoundingClientRect().height; if(h<=over) break;
-      z=Math.max(.4,z*(h-over)/h); f.style.zoom=z.toFixed(3);
+      z=Math.max(.4,z*(h-over-3)/h); f.style.zoom=z.toFixed(3);
     }
   });
 }
