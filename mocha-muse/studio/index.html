@@ -32,7 +32,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
-html{overflow-x:clip}
+html{overflow-x:clip;scroll-snap-type:y mandatory}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;overflow-x:clip;-webkit-font-smoothing:antialiased}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:90;background:var(--paper)}
 a{color:inherit;text-decoration:none}
@@ -54,6 +54,9 @@ button{font:inherit;color:inherit}
 h2{margin:10px 0 0;font:700 clamp(34px,4.2vw,60px)/1 var(--f-display);letter-spacing:-.03em;text-wrap:balance}
 h2 em{font-style:normal;color:var(--mocha)}
 section{padding-block:clamp(56px,7vw,100px)}
+.screen{min-height:100svh;display:flex;flex-direction:column;justify-content:center;scroll-snap-align:start;scroll-snap-stop:always;padding-block:calc(86px + env(safe-area-inset-top,0px)) 28px}
+.screen>.wrap,.fit{width:100%}
+.fit>.wrap{width:100%}
 .head{display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap;margin-bottom:clamp(24px,3vw,40px)}
 .head p{margin:0;max-width:36ch;color:var(--muted)}
 
@@ -77,7 +80,7 @@ section{padding-block:clamp(56px,7vw,100px)}
 @media (max-width:640px){.nav a.l{display:none}}
 
 /* ---------- hero ---------- */
-.hero{padding-block:calc(110px + env(safe-area-inset-top,0px)) clamp(40px,6vw,80px)}
+.hero{}
 .hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(28px,5vw,72px);align-items:center}
 .hero h1{margin:16px 0 18px;font:700 clamp(46px,6.4vw,96px)/.96 var(--f-display);letter-spacing:-.04em;text-wrap:balance}
 .hero h1 em{font-style:normal;color:var(--mocha);position:relative;white-space:nowrap}
@@ -100,17 +103,18 @@ section{padding-block:clamp(56px,7vw,100px)}
 .label{display:flex;align-items:center;gap:14px;padding:10px 12px 10px 18px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);max-width:100%}
 .label b{font:600 16px var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .label .price{font:500 13px var(--f-mono);padding:6px 10px;border-radius:999px;background:var(--paper)}
-@media (max-width:860px){.hero-grid{grid-template-columns:1fr}.hero-art{order:-1}.hero-art .stage3d{width:min(78%,360px)}}
+@media (max-width:860px){.hero-grid{grid-template-columns:1fr;gap:18px}.hero-art{order:-1;gap:12px}.hero-art .stage3d{width:min(56vw,30svh,340px)}.hero h1{font-size:clamp(34px,9.6vw,64px);margin:10px 0 10px}.hero .lede{font-size:15px;margin-bottom:16px}.picker{margin-top:18px}.thumbs button{width:44px;height:44px}}
+@media (max-width:860px) and (max-height:760px){.hero .lede{display:none}}
 
 /* ---------- studio row ---------- */
-.row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.mini{padding:22px;display:flex;flex-direction:column;gap:10px;justify-content:space-between;min-height:170px}
+.row4{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.mini{padding:24px;display:flex;flex-direction:column;gap:14px;justify-content:space-between;min-height:clamp(150px,30svh,260px)}
 .mini b{font:700 clamp(34px,3.4vw,52px)/1 var(--f-display);letter-spacing:-.03em;color:var(--mocha);font-variant-numeric:tabular-nums}
 .mini p{margin:0;color:var(--muted);font-size:15px}
 .mini.logo{align-items:center;justify-content:center;color:var(--mocha);background:var(--paper-2)}
 .mini.logo .logo-mark{width:120px;height:120px;transition:transform 1.2s cubic-bezier(.2,.8,.2,1)}
 .mini.logo:hover .logo-mark{transform:rotate(-14deg) scale(1.05)}
-@media (max-width:860px){.row4{grid-template-columns:1fr 1fr}}
+@media (max-width:700px){.row4{grid-template-columns:1fr;gap:10px}.mini{min-height:0;padding:18px;gap:6px}.mini b{font-size:32px}}
 
 /* ---------- kept: colour try-out + verses ---------- */
 .pair{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:stretch}
@@ -142,14 +146,34 @@ section{padding-block:clamp(56px,7vw,100px)}
 .dots{display:flex;gap:6px}
 .dots i{width:7px;height:7px;border-radius:50%;background:rgba(35,24,18,.2);transition:background .3s,width .3s}
 .dots i.on{background:var(--mocha);width:20px;border-radius:4px}
+.pair-hint{display:none;justify-content:center;gap:8px;align-items:center;color:var(--muted);margin-top:2px}
 @media (max-width:1020px){.t-vibe,.t-verse{grid-column:span 12}.t-verse{min-height:300px}}
-@media (max-width:600px){.t-vibe{grid-template-columns:1fr;padding:22px}.preview{width:min(78%,260px)}.t-verse{padding:22px}}
+@media (max-width:600px){
+  .pair{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;scrollbar-width:none;margin-inline:calc(-1 * (var(--gl) + var(--side))) calc(-1 * (var(--gr) + var(--side)));padding:6px calc(var(--gr) + var(--side)) 18px calc(var(--gl) + var(--side));overscroll-behavior-x:contain}
+  .pair::-webkit-scrollbar{display:none}
+  .pair>.tile{flex:none;width:86vw;scroll-snap-align:center}
+  .pair-hint{display:flex!important}
+  .t-vibe{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);padding:18px;gap:14px;align-items:start}
+  .t-vibe h3{font-size:24px}.t-vibe p{font-size:14px;margin-bottom:12px}
+  .sw button{width:32px;height:32px}
+  .preview{width:100%;margin:28px 0 0}
+  .cv span{font-size:30px}.cv small{font-size:8px}
+  .t-verse{padding:22px;min-height:0}
+  #vibe .head p{display:none}
+}
 
 /* ---------- works ---------- */
-.gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.shelf{overflow:hidden;margin-inline:calc(-1 * (var(--gl) + var(--side))) calc(-1 * (var(--gr) + var(--side)));padding-block:6px 30px;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
+.shelf.drag{cursor:grabbing}.shelf.drag .work{pointer-events:none}
+.track{display:flex;gap:14px;width:max-content;will-change:transform}
+.track>*{flex:none;width:clamp(220px,min(22vw,34svh),320px)}
+.track img{-webkit-user-drag:none;user-drag:none}
+.shelf-ctrl{display:flex;gap:8px}
+.shelf-ctrl button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:18px;box-shadow:var(--shadow);transition:background .3s,color .3s}
+.shelf-ctrl button:hover{background:var(--ink);color:var(--paper)}
 .work{border:0;padding:0;text-align:left;cursor:pointer;display:flex;flex-direction:column;background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .5s}
 .work:hover{transform:translateY(-4px);box-shadow:0 1px 0 rgba(35,24,18,.05),0 34px 54px -32px rgba(35,24,18,.55)}
-.work .wall{background:var(--paper-2);padding:28px 18% 30px;display:grid;place-items:center;margin:10px 10px 0;border-radius:calc(var(--r) - 8px)}
+.work .wall{background:var(--paper-2);padding:24px 16% 26px;display:grid;place-items:center;margin:10px 10px 0;border-radius:calc(var(--r) - 8px)}
 .work .stage3d{width:100%}
 .work .canvas3d{aspect-ratio:4/5}
 .work:hover .canvas3d,.work:focus-visible .canvas3d{--ry:0deg;--rx:0deg}
@@ -162,18 +186,17 @@ section{padding-block:clamp(56px,7vw,100px)}
 .work.more h3{font:700 clamp(26px,2.4vw,36px)/1.05 var(--f-display);letter-spacing:-.02em}
 .work.more p{margin:10px 0 0;opacity:.85}
 .work.more .pill{align-self:flex-start;background:var(--paper);color:var(--ink);border-color:var(--paper)}
-@media (max-width:980px){.gallery{grid-template-columns:1fr 1fr}}
-@media (max-width:560px){.gallery{grid-template-columns:1fr}}
+@media (max-width:600px){.track>*{width:min(66vw,34svh,280px)}#works .head p{display:none}}
 
 /* ---------- steps ---------- */
 .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;counter-reset:s}
-.step{padding:22px;display:flex;flex-direction:column;gap:12px;min-height:220px}
+.step{padding:22px;display:flex;flex-direction:column;gap:12px;min-height:clamp(170px,34svh,300px)}
 .step .n{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--paper);font:500 14px var(--f-mono);color:var(--mocha);transition:background .4s,color .4s}
 .step:hover .n{background:var(--mocha);color:var(--paper)}
 .step h3{margin:auto 0 0;font:700 22px/1.1 var(--f-display);letter-spacing:-.01em}
 .step p{margin:0;color:var(--muted);font-size:15px}
 @media (max-width:980px){.steps{grid-template-columns:1fr 1fr}}
-@media (max-width:520px){.steps{grid-template-columns:1fr}.step{min-height:0}}
+@media (max-width:520px){.steps{gap:10px}.step{min-height:0;padding:16px;gap:8px}.step .n{width:36px;height:36px;font-size:12px}.step h3{font-size:18px;margin-top:4px}.step p{font-size:13px;line-height:1.4}}
 
 /* ---------- order ---------- */
 .order-card{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:clamp(24px,4vw,56px);align-items:center;padding:clamp(26px,4vw,52px)}
@@ -183,7 +206,10 @@ section{padding-block:clamp(56px,7vw,100px)}
 .order-art{display:grid;place-items:center;background:var(--paper-2);border-radius:calc(var(--r) - 6px);aspect-ratio:1/1;color:var(--mocha)}
 .order-art .logo-mark{width:62%;height:62%;transition:transform 1.4s cubic-bezier(.2,.8,.2,1)}
 .order-card:hover .order-art .logo-mark{transform:rotate(-10deg) scale(1.04)}
-@media (max-width:760px){.order-card{grid-template-columns:1fr}.order-art{aspect-ratio:16/9}.order-art .logo-mark{width:40%;height:80%}}
+@media (max-width:760px){.order-card{grid-template-columns:1fr}.order-art{aspect-ratio:auto;height:min(22svh,180px)}.order-art .logo-mark{width:40%;height:86%}footer span:nth-child(2){display:none}}
+.end{min-height:100svh;display:flex;flex-direction:column;scroll-snap-align:start;scroll-snap-stop:always}
+.end #order{flex:1;display:flex;flex-direction:column;justify-content:center;padding-block:calc(86px + env(safe-area-inset-top,0px)) 10px}
+.end #order>.wrap{width:100%}
 footer{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding-block:24px calc(28px + env(safe-area-inset-bottom,0px));color:var(--muted);font-size:14px}
 footer .brand{display:flex;align-items:center;gap:10px;color:var(--mocha);font:600 13px var(--f-display);letter-spacing:.14em;text-transform:uppercase}
 footer .logo-mark{width:46px;height:46px}
@@ -210,6 +236,18 @@ footer .logo-mark{width:46px;height:46px}
   .rv{animation:rv linear both;animation-timeline:view();animation-range:entry 0% cover 20%}
   @keyframes rv{from{transform:translateY(36px)}to{transform:none}}
 }
+@media (max-height:500px){
+  .pair{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;scrollbar-width:none;margin-inline:calc(-1 * (var(--gl) + var(--side))) calc(-1 * (var(--gr) + var(--side)));padding:6px calc(var(--gr) + var(--side)) 14px calc(var(--gl) + var(--side))}
+  .pair::-webkit-scrollbar{display:none}
+  .pair>.tile{flex:none;width:min(86vw,620px);scroll-snap-align:center}
+  .pair-hint{display:flex!important}
+  .t-verse{min-height:0}.preview{width:min(100%,30svh)}
+  #vibe .head p,#works .head p,#studio .head p{display:none}
+  .screen{padding-block:calc(62px + env(safe-area-inset-top,0px)) 12px}
+  .nav{top:calc(6px + env(safe-area-inset-top,0px))}
+  .hero-grid{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr)}.hero-art{order:0}.hero-art .stage3d{width:min(100%,34svh*1.6)}.hero .lede,.picker{display:none}
+  .end #order{padding-block:56px 6px}footer{padding-block:8px}footer span:nth-child(2){display:none}
+}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 
@@ -222,7 +260,7 @@ footer .logo-mark{width:46px;height:46px}
 </nav>
 
 <main id="top">
-  <section class="hero pad">
+  <section class="hero pad screen">
     <div class="wrap hero-grid">
       <div>
         <span class="tag mono">Hand-painted Arabic calligraphy</span>
@@ -244,16 +282,18 @@ footer .logo-mark{width:46px;height:46px}
     </div>
   </section>
 
-  <section class="pad" id="studio" style="padding-top:0">
-    <div class="wrap row4">
-      <div class="card mini lift rv"><span class="mono">Painted by hand</span><b><span id="count">0</span>%</b><p>No prints, no copies. Each canvas is painted once.</p></div>
-      <div class="card mini lift rv"><span class="mono">Ready-made from</span><b>Rs 2,000</b><p>Custom sizes on request.</p></div>
-      <div class="card mini lift rv"><span class="mono">Any verse</span><b>Your words</b><p>Names, verses and phrases you love.</p></div>
-      <div class="card mini logo lift rv" aria-hidden="true"><span class="logo-mark"></span></div>
+  <section class="pad screen" id="studio">
+    <div class="wrap">
+      <div class="head rv"><div><span class="tag mono">The studio</span><h2>Every canvas deserves <em>a story.</em></h2></div><p>Mocha Muse paints Qur’anic verses and meaningful words by hand, one stroke at a time, to bring warmth and calm to your space.</p></div>
+      <div class="row4">
+        <div class="card mini lift rv"><span class="mono">Painted by hand</span><b><span id="count">0</span>%</b><p>No prints, no copies. Each canvas is painted once.</p></div>
+        <div class="card mini lift rv"><span class="mono">Ready-made from</span><b>Rs 2,000</b><p>Custom sizes on request.</p></div>
+        <div class="card mini lift rv"><span class="mono">Any verse</span><b>Your words</b><p>Names, verses and phrases you love.</p></div>
+      </div>
     </div>
   </section>
 
-  <section class="pad" id="vibe" style="padding-top:0">
+  <section class="pad screen" id="vibe">
     <div class="wrap">
       <div class="head rv"><div><span class="tag mono">Make it yours</span><h2>Design it, <em>then we paint it.</em></h2></div><p>Every Mocha Muse canvas can be painted in your colours, with your words.</p></div>
       <div class="pair">
@@ -273,17 +313,18 @@ footer .logo-mark{width:46px;height:46px}
           <div class="src"><span class="mono" id="vRef" style="color:var(--mocha)"></span><span class="dots" id="vDots"></span></div>
         </div>
       </div>
+      <div class="pair-hint mono">Swipe for verses we paint →</div>
     </div>
   </section>
 
-  <section class="pad" id="works">
+  <section class="pad screen" id="works">
     <div class="wrap">
-      <div class="head rv"><div><span class="tag mono">Selected works · 05</span><h2>Made to be <em>admired.</em></h2></div><p>Tap a canvas to see it up close. Each one can be repainted in your size and colours.</p></div>
-      <div class="gallery" id="gallery"></div>
-    </div>
+      <div class="head rv"><div><span class="tag mono">Selected works · 05</span><h2>Made to be <em>admired.</em></h2></div><p>Swipe or drag to browse. Tap a canvas to see it up close.</p><div class="shelf-ctrl"><button type="button" id="prev" aria-label="Previous painting">←</button><button type="button" id="next" aria-label="Next painting">→</button></div></div>
+      </div>
+      <div class="shelf" id="shelf" aria-label="Paintings. Swipe or drag sideways to browse"><div class="track" id="track"></div></div>
   </section>
 
-  <section class="pad" id="process">
+  <section class="pad screen" id="process">
     <div class="wrap">
       <div class="head rv"><div><span class="tag mono">How it works</span><h2>From your idea <em>to your wall.</em></h2></div></div>
       <div class="steps">
@@ -295,6 +336,8 @@ footer .logo-mark{width:46px;height:46px}
     </div>
   </section>
 
+</main>
+<div class="end">
   <section class="pad" id="order">
     <div class="wrap">
       <div class="card order-card rv">
@@ -309,12 +352,12 @@ footer .logo-mark{width:46px;height:46px}
       </div>
     </div>
   </section>
-</main>
 <footer class="pad wrap">
   <a class="brand" href="#top" aria-label="Mocha Muse, back to top"><span class="logo-mark" aria-hidden="true"></span>Mocha Muse</a>
   <span>Thank you for being part of our little creative world.</span>
   <span>© <span id="yr">2026</span></span>
 </footer>
+</div>
 
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Painting details" aria-hidden="true">
@@ -402,17 +445,51 @@ PALETTES.forEach((p,i)=>{const b=document.createElement("button");b.type="button
 PHRASES.forEach((p,i)=>{const b=document.createElement("button");b.type="button";b.textContent=p[0];b.setAttribute("aria-pressed",i===0);
   b.onclick=()=>{[...phr.children].forEach((c,j)=>c.setAttribute("aria-pressed",j===i));const t=$("#cvText");t.animate([{opacity:0,transform:"scale(.9)"},{opacity:1,transform:"none"}],{duration:450,easing:"ease-out"});t.textContent=p[1];};phr.appendChild(b);});
 
-/* ---------- works ---------- */
-const gallery=$("#gallery");
-PIECES.forEach((p,i)=>{
-  const b=document.createElement("button"); b.type="button"; b.className="work rv"; b.setAttribute("aria-label",`${p.title}, ${rs(p.price)}. View details`);
-  b.innerHTML=`<div class="wall"><div class="stage3d"><div class="canvas3d"><img src="${p.img}" alt="${p.alt}" loading="lazy"></div></div></div>
-    <div class="info"><h3>${p.title}</h3><span class="price">${rs(p.price)}</span><span class="ar" lang="ar">${p.ar}</span><span class="ref mono">No. 0${i+1} · ${p.ref}</span></div>`;
-  b.addEventListener("click",()=>openDrawer(p));
-  tilt(b.querySelector(".stage3d"),b.querySelector(".canvas3d"));
-  gallery.appendChild(b);
-});
-gallery.insertAdjacentHTML("beforeend",`<a class="work more rv" href="#vibe"><div><span class="mono" style="opacity:.8">Custom order</span><h3>Don’t see your verse?</h3><p>Choose your words, colours and size, and we’ll paint it for you.</p></div><span class="pill">Design your own <i>→</i></span></a>`);
+/* ---------- works: endless shelf that drifts, follows your gestures, and stops on a card ---------- */
+const shelf=$("#shelf"), track=$("#track");
+const cardHTML=(p,i)=>`<button type="button" class="work" data-i="${i}" aria-label="${p.title}, ${rs(p.price)}. View details"><div class="wall"><div class="stage3d"><div class="canvas3d"><img src="${p.img}" alt="${p.alt}" draggable="false"></div></div></div>
+  <div class="info"><h3>${p.title}</h3><span class="price">${rs(p.price)}</span><span class="ar" lang="ar">${p.ar}</span><span class="ref mono">No. 0${i+1} · ${p.ref}</span></div></button>`;
+const moreHTML=`<a class="work more" href="#vibe" draggable="false"><div><span class="mono" style="opacity:.8">Custom order</span><h3>Don’t see your verse?</h3><p>Choose your words, colours and size, and we’ll paint it for you.</p></div><span class="pill">Design your own <i>→</i></span></a>`;
+const oneSet=PIECES.map(cardHTML).join("")+moreHTML;
+track.innerHTML=oneSet+oneSet+oneSet;
+track.querySelectorAll(".work").forEach((w,k)=>{ if(k>PIECES.length){ w.setAttribute("aria-hidden","true"); w.tabIndex=-1; } });
+track.querySelectorAll(".stage3d").forEach(st=>tilt(st,st.querySelector(".canvas3d")));
+let setW=0, cardW=0, off=0, tgt=0, sIdle=9, sHold=false, sDrag=false, sMoved=false, sOn=false, sVis=false, sx0=0, sy0=0, slast=0, smode=0, smx=-1, smy=-1, sHitT=0, wheelEnd=0;
+function measure(){ const kids=track.children, n=kids.length/3; cardW=kids[0].getBoundingClientRect().width+14; setW=kids[n].offsetLeft-kids[0].offsetLeft; }
+measure(); addEventListener("resize",measure); document.fonts&&document.fonts.ready.then(measure);
+new IntersectionObserver(e=>sVis=e[0].isIntersecting).observe(shelf);
+const sTouch=()=>{ sIdle=0; };
+/* mouse drag */
+shelf.addEventListener("dragstart",e=>e.preventDefault());
+shelf.addEventListener("pointerdown",e=>{ if(e.pointerType!=="mouse") return; sDrag=true; sMoved=false; slast=e.clientX; sTouch(); });
+addEventListener("pointermove",e=>{ if(e.pointerType==="mouse"){smx=e.clientX;smy=e.clientY;} if(!sDrag) return; const dx=e.clientX-slast; if(!sMoved && Math.abs(e.clientX-slast)<5) return; if(!sMoved){sMoved=true;shelf.classList.add("drag");} slast=e.clientX; tgt+=dx; off=tgt; sTouch(); },{passive:true});
+addEventListener("pointerup",()=>{ if(!sDrag) return; sDrag=false; shelf.classList.remove("drag"); setTimeout(()=>sMoved=false,40); });
+document.documentElement.addEventListener("pointerleave",()=>{smx=-1;});
+/* trackpad / shift+wheel */
+shelf.addEventListener("wheel",e=>{ const dx=e.shiftKey&&!e.deltaX?e.deltaY:e.deltaX; if(Math.abs(dx)<=Math.abs(e.shiftKey?0:e.deltaY)) return; e.preventDefault(); tgt-=dx; sTouch(); },{passive:false});
+/* finger swipe */
+shelf.addEventListener("touchstart",e=>{ const t=e.touches[0]; sx0=slast=t.clientX; sy0=t.clientY; smode=0; sHold=true; sTouch(); },{passive:true});
+shelf.addEventListener("touchmove",e=>{ const t=e.touches[0], dx=t.clientX-sx0, dy=t.clientY-sy0;
+  if(!smode){ if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)) smode=1; else if(Math.abs(dy)>8) smode=2; }
+  if(smode===1){ e.preventDefault(); tgt+=t.clientX-slast; off=tgt; slast=t.clientX; sMoved=true; sTouch(); } },{passive:false});
+const sEnd=()=>{ sHold=false; smode=0; sTouch(); setTimeout(()=>sMoved=false,40); };
+shelf.addEventListener("touchend",sEnd); shelf.addEventListener("touchcancel",sEnd);
+/* clicks: open a painting, unless that was a drag */
+shelf.addEventListener("click",e=>{ if(sMoved){ e.preventDefault(); e.stopPropagation(); return; } const w=e.target.closest(".work[data-i]"); if(w) openDrawer(PIECES[+w.dataset.i]); },true);
+$("#prev").onclick=()=>{ tgt+=cardW; sTouch(); };
+$("#next").onclick=()=>{ tgt-=cardW; sTouch(); };
+let sLast=performance.now();
+(function shelfLoop(now){
+  requestAnimationFrame(shelfLoop);
+  const dt=Math.min(64,now-sLast)/1000; sLast=now;
+  if(!sVis||!setW) return;
+  if(now-sHitT>80){ sHitT=now; const el=smx<0?null:document.elementFromPoint(smx,smy); sOn=!!(el&&el.closest&&el.closest(".shelf .work")); }
+  sIdle+=dt; if(sHold||sDrag) sIdle=0;
+  if(!reduce && !sHold && !sDrag && !sOn && sIdle>1.5) tgt-=dt*38;
+  off+= (tgt-off)*(1-Math.exp(-dt*10));
+  while(off<-setW){off+=setW;tgt+=setW;} while(off>0){off-=setW;tgt-=setW;}
+  track.style.transform=`translate3d(${(off-setW).toFixed(2)}px,0,0)`;
+})(sLast);
 
 /* ---------- drawer ---------- */
 const drawer=$("#drawer"), scrim=$("#scrim");
@@ -426,6 +503,46 @@ function closeDrawer(){ drawer.classList.remove("on"); scrim.classList.remove("o
 $("#dx").onclick=closeDrawer; scrim.onclick=closeDrawer; $("#dOrder").addEventListener("click",()=>{ if(!$("#dOrder").target) closeDrawer(); });
 addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); });
 
+/* ---------- one screen per scroll (mouse wheel and trackpad) ---------- */
+(function(){
+  if(!matchMedia("(hover:hover) and (pointer:fine)").matches) return;   /* phones use native snapping */
+  const stops=()=>[...new Set([...document.querySelectorAll(".screen,.end")].map(e=>Math.round(e.getBoundingClientRect().top+scrollY)))].sort((a,b)=>a-b);
+  let acc=0, locked=false, lockT=0, lastW=0;
+  addEventListener("wheel",e=>{
+    if(e.ctrlKey || document.body.style.overflow==="hidden") return;
+    if(Math.abs(e.deltaX)>Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    const now=performance.now(), gap=now-lastW; lastW=now;
+    if(locked){ if(now-lockT>650 && gap>140) locked=false; else return; }
+    acc+=e.deltaMode===1?e.deltaY*30:e.deltaY;
+    if(Math.abs(acc)<24) return;
+    const dir=Math.sign(acc); acc=0;
+    const y=scrollY, list=stops();
+    const next=dir>0 ? list.find(t=>t>y+4) : [...list].reverse().find(t=>t<y-4);
+    if(next===undefined) return;
+    locked=true; lockT=now;
+    scrollTo({top:next,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  },{passive:false});
+})();
+
+/* ---------- every section fits one screen, on any device ---------- */
+function fitScreens(pairs){
+  pairs.forEach(([cont,inner])=>{
+    if(!cont||!inner) return;
+    let f=inner.querySelector(":scope > .fit");
+    if(!f){ f=document.createElement("div"); f.className="fit"; while(inner.firstChild) f.appendChild(inner.firstChild); inner.appendChild(f); }
+    f.style.zoom="";
+    let z=1;
+    for(let i=0;i<4;i++){
+      const over=cont.getBoundingClientRect().height-innerHeight;
+      if(over<=1) break;
+      const h=f.getBoundingClientRect().height; if(h<=over) break;
+      z=Math.max(.4,z*(h-over)/h); f.style.zoom=z.toFixed(3);
+    }
+  });
+}
+const doFit=()=>fitScreens([...document.querySelectorAll(".screen")].map(s=>[s,s]).concat([[document.querySelector(".end"),document.getElementById("order")]]));
+doFit(); addEventListener("resize",()=>{measure();doFit();}); document.fonts&&document.fonts.ready.then(()=>{doFit();measure();});
 /* ---------- contact ---------- */
 const main=orderHref("Hi Mocha Muse! I'd like to order a painting.");
 if(main){const b=$("#orderBtn"); b.href=main; b.target="_blank"; b.rel="noopener";}
