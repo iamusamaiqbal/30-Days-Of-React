@@ -33,6 +33,7 @@
 }
 *{box-sizing:border-box}
 html{overflow-x:clip;scroll-snap-type:y mandatory}
+html.paged{scroll-snap-type:none}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;overflow-x:clip;-webkit-font-smoothing:antialiased}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:90;background:var(--paper)}
 a{color:inherit;text-decoration:none}
@@ -373,6 +374,17 @@ footer .logo-mark{width:46px;height:46px}
 </aside>
 
 <script>
+/* each wheel/trackpad swipe is decided once, as it starts: sideways (ring/shelf) or vertical (page) */
+(function(){ let last=0, axis=null;
+  addEventListener("wheel",e=>{ const now=performance.now(), gap=now-last; last=now;
+    const ax=Math.abs(e.shiftKey&&!e.deltaX?e.deltaY:e.deltaX), ay=Math.abs(e.shiftKey?0:e.deltaY);
+    if(gap>140) axis=null;
+    if(!axis){ if(ax>ay*1.3+1) axis="x"; else if(ay>ax*1.3+1) axis="y"; else if(Math.max(ax,ay)>3) axis=ax>ay?"x":"y"; }
+    else if(axis==="x" && ay>ax*3+10) axis="y";
+    else if(axis==="y" && ax>ay*3+10) axis="x";
+    window.__axis=axis;
+  },{capture:true,passive:true});
+})();
 /* ---- Contact details: fill these in ---- */
 const CONTACT = { whatsapp: "", instagram: "", email: "" }; // whatsapp: digits with country code
 
@@ -466,7 +478,7 @@ addEventListener("pointermove",e=>{ if(e.pointerType==="mouse"){smx=e.clientX;sm
 addEventListener("pointerup",()=>{ if(!sDrag) return; sDrag=false; shelf.classList.remove("drag"); setTimeout(()=>sMoved=false,40); });
 document.documentElement.addEventListener("pointerleave",()=>{smx=-1;});
 /* trackpad / shift+wheel */
-shelf.addEventListener("wheel",e=>{ const dx=e.shiftKey&&!e.deltaX?e.deltaY:e.deltaX; if(Math.abs(dx)<=Math.abs(e.shiftKey?0:e.deltaY)) return; e.preventDefault(); tgt-=dx; sTouch(); },{passive:false});
+shelf.addEventListener("wheel",e=>{ const dx=e.shiftKey&&!e.deltaX?e.deltaY:e.deltaX; if(window.__axis!=="x") return; e.preventDefault(); tgt-=dx; sTouch(); },{passive:false});
 /* finger swipe */
 shelf.addEventListener("touchstart",e=>{ const t=e.touches[0]; sx0=slast=t.clientX; sy0=t.clientY; smode=0; sHold=true; sTouch(); },{passive:true});
 shelf.addEventListener("touchmove",e=>{ const t=e.touches[0], dx=t.clientX-sx0, dy=t.clientY-sy0;
@@ -503,27 +515,57 @@ function closeDrawer(){ drawer.classList.remove("on"); scrim.classList.remove("o
 $("#dx").onclick=closeDrawer; scrim.onclick=closeDrawer; $("#dOrder").addEventListener("click",()=>{ if(!$("#dOrder").target) closeDrawer(); });
 addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); });
 
-/* ---------- one screen per scroll (mouse wheel and trackpad) ---------- */
+/* ---------- one screen per scroll (mouse wheel, trackpad, keyboard) ---------- */
 (function(){
-  if(!matchMedia("(hover:hover) and (pointer:fine)").matches) return;   /* phones use native snapping */
-  const stops=()=>[...new Set([...document.querySelectorAll(".screen,.end")].map(e=>Math.round(e.getBoundingClientRect().top+scrollY)))].sort((a,b)=>a-b);
-  let acc=0, locked=false, lockT=0, lastW=0;
-  addEventListener("wheel",e=>{
-    if(e.ctrlKey || document.body.style.overflow==="hidden") return;
-    if(Math.abs(e.deltaX)>Math.abs(e.deltaY)) return;
-    e.preventDefault();
-    const now=performance.now(), gap=now-lastW; lastW=now;
-    if(locked){ if(now-lockT>650 && gap>140) locked=false; else return; }
-    acc+=e.deltaMode===1?e.deltaY*30:e.deltaY;
-    if(Math.abs(acc)<24) return;
-    const dir=Math.sign(acc); acc=0;
+  if(!matchMedia("(hover:hover) and (pointer:fine)").matches) return;   /* phones and tablets use native snapping */
+  const root=document.documentElement; root.classList.add("paged");      /* native snap off: this script places each screen */
+  const SEL=".screen,.end";
+  const smooth=!matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const stops=()=>[...new Set([...document.querySelectorAll(SEL)].map(e=>Math.round(e.getBoundingClientRect().top+scrollY)))].sort((a,b)=>a-b);
+  const blocked=()=>document.body.style.overflow==="hidden";
+  let busy=false, moving=false, started=0, target=null, acc=0, lastT=0, lastAbs=0;
+  function go(dir){
     const y=scrollY, list=stops();
     const next=dir>0 ? list.find(t=>t>y+4) : [...list].reverse().find(t=>t<y-4);
     if(next===undefined) return;
-    locked=true; lockT=now;
-    scrollTo({top:next,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+    busy=true; moving=true; started=performance.now(); target=next;
+    scrollTo({top:next,behavior:smooth?"smooth":"auto"});
+  }
+  addEventListener("wheel",e=>{
+    if(e.ctrlKey || blocked()) return;
+    if(window.__axis==="x"){ if(e.target.closest(".ring-stick,.shelf")) return; e.preventDefault(); return; }   /* sideways swipes belong to the ring / shelf */
+    e.preventDefault();
+    const now=performance.now(), gap=now-lastT, dy=e.deltaMode===1?e.deltaY*30:e.deltaY, abs=Math.abs(dy);
+    const fresh = gap>120 || abs>lastAbs*1.5+4;                 /* a new swipe, not trackpad momentum */
+    lastT=now; lastAbs=abs;
+    if(busy){
+      if(now-started>450 && fresh) busy=false; else return;   /* stays locked through momentum; a new swipe or a pause unlocks */
+    }
+    if(fresh && Math.sign(dy)!==Math.sign(acc)) acc=0;
+    acc+=dy;
+    if(Math.abs(acc)<18) return;
+    const dir=Math.sign(acc); acc=0; go(dir);
   },{passive:false});
+  addEventListener("keydown",e=>{
+    if(blocked() || e.target.closest("input,textarea,select,[contenteditable]")) return;
+    const k=e.key;
+    if(k==="ArrowDown"||k==="PageDown"||(k===" "&&!e.shiftKey)){ e.preventDefault(); go(1); }
+    else if(k==="ArrowUp"||k==="PageUp"||(k===" "&&e.shiftKey)){ e.preventDefault(); go(-1); }
+  });
+  /* after a scrollbar drag, Home/End or a link jump, settle on the nearest screen */
+  let settleT=0;
+  addEventListener("scroll",()=>{
+    clearTimeout(settleT);
+    settleT=setTimeout(()=>{
+      if(blocked()) return;
+      if(moving){ moving=false; return; }                       /* that was our own glide arriving */
+      const y=scrollY, list=stops(); if(!list.length) return;
+      const near=list.reduce((a,b)=>Math.abs(b-y)<Math.abs(a-y)?b:a);
+      if(Math.abs(near-y)>2 && scrollY+innerHeight<document.documentElement.scrollHeight-2) scrollTo({top:near,behavior:smooth?"smooth":"auto"});
+    },160);
+  },{passive:true});
 })();
+
 
 /* ---------- every section fits one screen, on any device ---------- */
 function fitScreens(pairs){
