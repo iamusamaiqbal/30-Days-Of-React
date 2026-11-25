@@ -131,7 +131,7 @@ h2 em{font-style:italic;color:var(--sepia)}
 .ctrl{display:flex;gap:8px}
 .ctrl button{width:50px;height:50px;border:1px solid var(--ink);background:transparent;cursor:pointer;font-size:18px;transition:background .3s,color .3s}
 .ctrl button:hover{background:var(--ink);color:var(--paper)}
-.line-zone{position:relative;z-index:2;overflow:hidden;margin-inline:calc(-1 * (var(--gl) + var(--side))) calc(-1 * (var(--gr) + var(--side)));padding:0 0 10px;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
+.line-zone{position:relative;z-index:2;overflow:hidden;margin-inline:calc(-1 * (var(--gl) + var(--side))) calc(-1 * (var(--gr) + var(--side)));padding:0 0 56px;margin-bottom:-46px;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
 .line-zone.drag{cursor:grabbing}.line-zone.drag .hang{pointer-events:none}
 .line-zone::before{content:"";position:absolute;left:0;right:0;top:22px;height:1.5px;background:linear-gradient(90deg,transparent,#3a2f27 8%,#3a2f27 92%,transparent);z-index:3}
 .rail{display:flex;width:max-content;will-change:transform;padding-top:14px}
