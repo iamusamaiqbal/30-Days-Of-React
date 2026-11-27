@@ -1,0 +1,16 @@
+{
+  "hosting": {
+    "public": "mocha-muse",
+    "ignore": ["**/.*", "**/node_modules/**", "README.md", "firestore.rules"],
+    "cleanUrls": true,
+    "redirects": [
+      { "source": "/", "destination": "/ink/", "type": 302 }
+    ],
+    "headers": [
+      { "source": "**/*.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    ]
+  },
+  "firestore": {
+    "rules": "mocha-muse/firestore.rules"
+  }
+}

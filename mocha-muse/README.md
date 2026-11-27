@@ -31,5 +31,18 @@ The ink version (`ink/index.html`) has a small shop admin:
 2. **Turn on email sign-in:** Authentication > Sign-in method > Email/Password > Enable.
 3. **Create your admin login:** Authentication > Users > Add user, with your email and a strong password. Copy the new user's **User UID**.
 4. **Mark it as an admin:** the studio owner's UID is already set in `firestore.rules` and in `ADMIN_UIDS` near the top of the main script. To add another admin later, either add their UID to both places, or create a document in a Firestore `admins` collection whose Document ID is their UID.
-5. **Host the page:** for example Firebase Hosting or GitHub Pages. Then add that domain under Authentication > Settings > Authorized domains (Firebase Hosting domains are already there).
+5. **Host the page:** see "Deploying" below. Firebase Hosting domains are already authorized for sign-in; for any other domain, add it under Authentication > Settings > Authorized domains.
 6. **Add the starter paintings:** open the site, go to Admin, sign in, open Products and click "copy in the 5 paintings already on the site".
+
+## Deploying (Firebase Hosting, automatic)
+
+Every push that changes `mocha-muse/` deploys the site to **https://brownique-art.web.app** and publishes `firestore.rules`, through the GitHub Actions workflow in `.github/workflows/firebase-deploy.yml`. The site opens on the ink shop; the other versions are at `/studio/`, `/sketch/` and `/index.html`.
+
+One-time setup of the deploy key:
+
+1. Firebase console > Project settings (gear icon) > **Service accounts** > **Generate new private key**. A JSON file downloads. Keep it private.
+2. GitHub > this repository > **Settings** > **Secrets and variables** > **Actions** > **New repository secret**.
+   Name: `FIREBASE_SERVICE_ACCOUNT_BROWNIQUE_ART`. Value: the whole contents of the JSON file. Save.
+3. Re-run the latest "Deploy Mocha Muse to Firebase" run under the **Actions** tab, or push any change.
+
+If a deploy fails with a message about an API not being enabled, open the link in the error, click Enable, and re-run the workflow.
