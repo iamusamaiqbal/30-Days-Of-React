@@ -516,7 +516,7 @@ footer .mark{width:40px;height:40px}
       <section id="vProducts" hidden>
         <div class="main-head"><div><h2>Products</h2><div class="sub" id="pSub"></div></div><button class="btn fill sm" type="button" id="pAdd">Add product <span>+</span></button></div>
         <div class="pgrid" id="pGrid"></div>
-        <div class="empty" id="pEmpty" hidden>No products yet. Add your first painting.</div>
+        <div class="empty" id="pEmpty" hidden>No products yet. Add your first painting<span id="seedWrap" hidden>, or <button class="lnk" type="button" id="seedBtn">copy in the 5 paintings already on the site</button></span>.</div>
       </section>
     </main>
   </div>
@@ -558,6 +558,9 @@ footer .mark{width:40px;height:40px}
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-firestore-compat.js"></script>
 <script>
 /* each wheel/trackpad swipe is decided once, as it starts: sideways (line of prints) or vertical (page) */
 (function(){ let last=0, axis=null;
@@ -572,6 +575,17 @@ footer .mark{width:40px;height:40px}
 })();
 /* ---- Contact details: fill these in ---- */
 const CONTACT = { whatsapp: "", instagram: "", email: "" }; // whatsapp: digits with country code
+
+/* ---- Firebase (Brownique Art). This web config is public by design; Firestore rules protect the data. ---- */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDXQxPznonxlvpTAS1Q10BW1Jw6djA2BwQ",
+  authDomain: "brownique-art.firebaseapp.com",
+  projectId: "brownique-art",
+  storageBucket: "brownique-art.firebasestorage.app",
+  messagingSenderId: "403299530700",
+  appId: "1:403299530700:web:d57028121127a28fc80f69",
+  measurementId: "G-9W50V5PP24"
+};
 
 /* ---- New-order emails (free). Fill ONE of these in. ----
    FormSubmit: put the address that should receive orders in `to`. The first order sends you a
@@ -765,7 +779,7 @@ doFit(); addEventListener("resize",()=>{doFit();measure();}); document.fonts&&do
    Auth for signIn/signOut/user, Firestore for products and orders, and
    Storage for product photos. The rest of the page does not change.
    ===================================================================== */
-const Store=(()=>{
+const LocalStore=(()=>{
   const K={p:"mm.products.v1",o:"mm.orders.v1",s:"mm.session.v1",n:"mm.ordno.v1"};
   const mem={};
   const read=(k,d)=>{ try{ const v=localStorage.getItem(k); if(v) return JSON.parse(v); }catch(e){} return k in mem?mem[k]:d; };
@@ -787,14 +801,58 @@ const Store=(()=>{
       if(!write(K.p,all)) throw new Error("storage_full"); return p; },
     async deleteProduct(id){ write(K.p,P().filter(p=>p.id!==id)); },
     async orders(){ return O().sort((a,b)=>b.created-a.created); },
-    async createOrder(o){ const n=(read(K.n,1000)||1000)+1; write(K.n,n); const ord={...o,id:uid(),no:"MM-"+n,created:Date.now(),status:"new"}; const all=O(); all.unshift(ord); write(K.o,all); return ord; },
+    async createOrder(o){ const n=(read(K.n,1000)||1000)+1; write(K.n,n); const ord={...o,id:uid(),no:o.no||("MM-"+n),created:Date.now(),status:"new"}; const all=O(); all.unshift(ord); write(K.o,all); return ord; },
     async updateOrder(id,patch){ write(K.o,O().map(o=>o.id===id?{...o,...patch}:o)); },
     async clearSamples(){ write(K.o,O().filter(o=>!o.sample)); },
     /* demo sign-in. Firebase Auth replaces this. */
     async signIn(user,pass){ if(String(user).trim().toLowerCase()==="admin" && pass==="mocha123"){ const s={name:"Studio admin",at:Date.now()}; write(K.s,s); return s; } throw new Error("bad_login"); },
     async signOut(){ write(K.s,null); },
-    async user(){ return read(K.s,null); }
+    async user(){ return read(K.s,null); },
+    async seed(){ }
   };
+})();
+
+/* ---------- Firebase backend: Auth for the admin, Firestore for products and orders ---------- */
+function makeFirebaseStore(){
+  const app=firebase.apps.length?firebase.app():firebase.initializeApp(FIREBASE_CONFIG);
+  const db=firebase.firestore(app), auth=firebase.auth(app);
+  const authReady=new Promise(res=>{ const un=auth.onAuthStateChanged(u=>{ un(); res(u); }); });
+  const adminOf={};
+  async function isAdmin(u){ if(!u) return false; if(u.uid in adminOf) return adminOf[u.uid];
+    try{ const d=await db.collection("admins").doc(u.uid).get(); adminOf[u.uid]=d.exists; }catch(e){ adminOf[u.uid]=false; } return adminOf[u.uid]; }
+  const rows=q=>q.docs.map(d=>({id:d.id,...d.data()}));
+  const clean=o=>{ const c={}; Object.keys(o).forEach(k=>{ if(o[k]!==undefined && k!=="id") c[k]=o[k]; }); return c; };
+  return {
+    async products(){ const u=auth.currentUser||await authReady; const all=u&&await isAdmin(u);
+      const q=all?db.collection("products"):db.collection("products").where("visible","==",true);
+      return rows(await q.get()).sort((a,b)=>(b.created||0)-(a.created||0)); },
+    async saveProduct(p){ const data=clean(p); if(p.id){ await db.collection("products").doc(p.id).set(data,{merge:true}); return p; }
+      data.created=Date.now(); const r=await db.collection("products").add(data); return {...p,id:r.id}; },
+    async deleteProduct(id){ await db.collection("products").doc(id).delete(); },
+    async orders(){ return rows(await db.collection("orders").orderBy("created","desc").get()); },
+    async createOrder(o){ const ord=clean({...o,created:Date.now(),status:"new"}); const r=await db.collection("orders").add(ord); return {...ord,id:r.id}; },
+    async updateOrder(id,patch){ await db.collection("orders").doc(id).update(clean(patch)); },
+    async clearSamples(){ },
+    async signIn(email,pass){ const c=await auth.signInWithEmailAndPassword(String(email).trim(),pass);
+      if(!(await isAdmin(c.user))){ await auth.signOut(); const e=new Error("not_admin"); e.code="not_admin"; throw e; } return {name:c.user.email}; },
+    async signOut(){ await auth.signOut(); },
+    async user(){ const u=auth.currentUser||await authReady; if(!u) return null; return (await isAdmin(u))?{name:u.email}:null; },
+    /* first run: copy the five paintings already on the site into Firestore */
+    async seed(){ const b=db.batch(); PIECES.forEach((p,i)=>b.set(db.collection("products").doc("p"+(i+1)),{img:"builtin:"+i,title:p.title,ar:p.ar,tr:p.tr,ref:p.ref,price:p.price,alt:p.alt,visible:true,created:Date.now()-i})); await b.commit(); }
+  };
+}
+
+/* Store picks Firebase when the page can reach it (a hosted site), and the in-browser demo store otherwise
+   (for example the claude.ai preview, which blocks outside connections). */
+const Store={ mode:"local", impl:LocalStore };
+["products","saveProduct","deleteProduct","orders","createOrder","updateOrder","clearSamples","signIn","signOut","user","seed"].forEach(m=>{ Store[m]=async(...a)=>{ await Store.ready; return Store.impl[m](...a); }; });
+Store.ready=(async()=>{
+  if(!(window.firebase && FIREBASE_CONFIG.apiKey)) return;
+  try{
+    const ok=await Promise.race([fetch("https://firestore.googleapis.com/",{mode:"no-cors",cache:"no-store"}).then(()=>true,()=>false),new Promise(r=>setTimeout(()=>r(false),5000))]);
+    if(!ok) return;
+    Store.impl=makeFirebaseStore(); Store.mode="firebase";
+  }catch(e){ Store.impl=LocalStore; Store.mode="local"; }
 })();
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const imgOf=p=>{ const s=String(p.img||""); if(s.startsWith("builtin:")) return (PIECES[+s.slice(8)]||PIECES[0]).img; return s.startsWith("data:image/")||s.startsWith("https://")||s.startsWith("/_blob/")?s:PIECES[0].img; };
@@ -829,7 +887,9 @@ async function notifyAdmin(o){
    STOREFRONT: the drying line reads its paintings from Store
    ===================================================================== */
 async function loadShop(){
-  PRODUCTS=(await Store.products()).filter(p=>p.visible);
+  let list=[]; try{ list=await Store.products(); }catch(e){ list=[]; }
+  if(!list.length && Store.mode==="firebase") list=PIECES.map((p,i)=>({id:"builtin"+i,img:"builtin:"+i,title:p.title,ar:p.ar,tr:p.tr,ref:p.ref,price:p.price,alt:p.alt,visible:true}));
+  PRODUCTS=list.filter(p=>p.visible);
   if(!PRODUCTS.length){ rail.innerHTML=""; zone.setAttribute("data-empty","1"); setW=0; return; }
   zone.removeAttribute("data-empty");
   const one=PRODUCTS.map((p,i)=>`<button type="button" class="hang" data-i="${i}" aria-label="${esc(p.title)}, ${esc(rs(+p.price||0))}. View details"><span class="clip"></span><span class="sheet-p"><img src="${esc(imgOf(p))}" alt="${esc(p.alt||p.title)}" draggable="false"><b>${esc(p.title)}</b><span class="ar" lang="ar">${esc(p.ar)}</span><span class="pr">${esc(rs(+p.price||0).toUpperCase())}${p.ref?" · "+esc(String(p.ref).toUpperCase()):""}</span></span></button>`).join("");
@@ -876,8 +936,13 @@ omF.addEventListener("submit",async e=>{
   if(!ok){ omF.querySelector(".bad input,.bad textarea").focus(); return; }
   const c=omCtx, base={name:v("oName"),phone:v("oPhone"),city:v("oCity"),address:v("oAddr"),notes:[v("oSize")&&("Size: "+v("oSize")),v("oNotes")].filter(Boolean).join(" · ")};
   const item=c.kind==="ready"?{kind:"ready",productId:c.product.id,title:c.product.title,price:+c.product.price||0}:{kind:"custom",title:`Custom: ${c.words} in ${c.ink[0].toLowerCase()}`,price:0};
-  const ord=await Store.createOrder({...base,...item});
-  notifyAdmin(ord).then(r=>Store.updateOrder(ord.id,{email:r}).then(()=>{ if(ad.classList.contains("on")) renderAdmin(); }));
+  const btn=omF.querySelector("button[type=submit]"); btn.disabled=true; btn.firstChild.textContent="Sending… ";
+  const pre={...base,...item,productId:item.productId||"",no:"MM-"+Date.now().toString(36).toUpperCase().slice(-6)};
+  const email=await Promise.race([notifyAdmin(pre),new Promise(r=>setTimeout(()=>r("failed"),8000))]);
+  let ord;
+  try{ ord=await Store.createOrder({...pre,email}); }
+  catch(err){ btn.disabled=false; btn.firstChild.textContent="Send order "; check("oAddr",false,"We couldn’t send your order. Please check your connection and try again."); return; }
+  btn.disabled=false; btn.firstChild.textContent="Send order ";
   try{ localStorage.setItem("mm.customer",JSON.stringify({oName:base.name,oPhone:base.phone,oCity:base.city,oAddr:base.address})); }catch(e){}
   $("#omNo").textContent="Order "+ord.no; $("#omPhone").textContent=ord.phone;
   const h=orderHref(`Hi Mocha Muse! My order ${ord.no}: ${ord.title} (${priceTxt(ord)}). ${ord.name}, ${ord.city}.`), wa=$("#omWa");
@@ -902,13 +967,27 @@ async function renderAdmin(){
   $("#adWho").textContent="Signed in as "+u.name;
   document.querySelectorAll(".side [data-view]").forEach(b=>b.setAttribute("aria-current",b.dataset.view===view?"page":"false"));
   $("#vOrders").hidden=view!=="orders"; $("#vProducts").hidden=view!=="products";
-  const orders=await Store.orders();
+  let orders=[]; try{ orders=await Store.orders(); }catch(e){ toast("Couldn’t load orders. Check your connection."); }
   $("#demoBar").querySelector("#clearSamples").hidden=!orders.some(o=>o.sample);
   if(view==="orders") renderOrders(orders); else renderProducts();
   refreshBadge(orders);
 }
-async function refreshBadge(list){ const orders=list||await Store.orders(); const n=orders.filter(o=>o.status==="new").length; const b=$("#bNew"); b.textContent=n; b.hidden=!n; }
-$("#lf").addEventListener("submit",async e=>{ e.preventDefault(); try{ await Store.signIn($("#lUser").value,$("#lPass").value); $("#lErr").textContent=""; $("#lPass").value=""; renderAdmin(); toast("Signed in"); }catch(err){ $("#lErr").textContent="That username and password don’t match."; $("#lPass").focus(); } });
+async function refreshBadge(list){ let orders=list; if(!orders){ try{ orders=await Store.orders(); }catch(e){ return; } } const n=orders.filter(o=>o.status==="new").length; const b=$("#bNew"); b.textContent=n; b.hidden=!n; }
+$("#lf").addEventListener("submit",async e=>{ e.preventDefault(); const b=$("#lf button[type=submit]"); b.disabled=true;
+  try{ await Store.signIn($("#lUser").value,$("#lPass").value); $("#lErr").textContent=""; $("#lPass").value=""; renderAdmin(); toast("Signed in"); }
+  catch(err){ const c=err&&err.code||"";
+    $("#lErr").textContent= c==="not_admin"?"This account isn’t set up as a studio admin yet."
+      : /network|unavailable/.test(c)?"We couldn’t reach the server. Check your connection and try again."
+      : /too-many-requests/.test(c)?"Too many attempts. Wait a minute and try again."
+      : Store.mode==="firebase"?"That email and password don’t match.":"That username and password don’t match.";
+    $("#lPass").focus(); }
+  b.disabled=false; });
+function applyMode(){ const fb=Store.mode==="firebase";
+  document.querySelector(".login-card .demo").hidden=fb;
+  document.querySelector('label[for="lUser"]').textContent=fb?"Email":"Username or email";
+  $("#lUser").type=fb?"email":"text";
+  $("#demoBar").hidden=fb; }
+Store.ready.then(()=>{ applyMode(); loadShop(); if(ad.classList.contains("on")) renderAdmin(); });
 $("#adOut").onclick=async()=>{ await Store.signOut(); closePanels(); renderAdmin(); };
 document.querySelectorAll(".side [data-view]").forEach(b=>b.onclick=()=>{ view=b.dataset.view; closePanels(); renderAdmin(); });
 $("#clearSamples").onclick=async()=>{ await Store.clearSamples(); toast("Sample orders removed"); renderAdmin(); };
@@ -946,7 +1025,7 @@ $("#opSave").onclick=async()=>{ if(!opId) return; await Store.updateOrder(opId,{
 async function renderProducts(){
   const ps=await Store.products();
   $("#pSub").textContent=ps.filter(p=>p.visible).length+" on the website · "+ps.length+" in total";
-  $("#pEmpty").hidden=!!ps.length;
+  $("#pEmpty").hidden=!!ps.length; $("#seedWrap").hidden=Store.mode!=="firebase";
   $("#pGrid").innerHTML=ps.map(p=>`<article class="pcard" data-id="${esc(p.id)}"><div class="im"><img src="${esc(imgOf(p))}" alt="">${p.visible?"":'<span class="hid">Hidden</span>'}</div>
     <div class="bd"><b>${esc(p.title)}</b>${p.ar?`<span class="ar" lang="ar">${esc(p.ar)}</span>`:""}<span class="pr">${esc(rs(+p.price||0))}</span></div>
     <div class="ft"><label class="sw-tog"><input type="checkbox" data-vis ${p.visible?"checked":""}> On site</label><span><button class="lnk" type="button" data-edit>Edit</button><button class="lnk danger" type="button" data-del>Delete</button></span></div></article>`).join("");
@@ -958,6 +1037,7 @@ async function renderProducts(){
   });
 }
 $("#pAdd").onclick=()=>openProductPanel(null);
+$("#seedBtn").onclick=async()=>{ try{ await Store.seed(); toast("Starter paintings added"); renderProducts(); loadShop(); }catch(e){ toast("Couldn’t add them. Check you’re signed in as an admin."); } };
 async function openProductPanel(id){
   const p=id?(await Store.products()).find(x=>x.id===id):null; ppId=id; ppImg=p?p.img:"";
   $("#ppKicker").textContent=p?"Edit product":"New product"; $("#ppTitle").textContent=p?p.title:"Add a painting";
@@ -980,7 +1060,7 @@ $("#pf").addEventListener("submit",async e=>{
   const imgOk=!!ppImg; $("#pImgErr").textContent=imgOk?"":"Add a photo of the painting.";
   if(!ok||!imgOk) return;
   const p={id:ppId||undefined,img:ppImg,title:v("pTitle"),price:Math.round(+v("pPrice")),ref:v("pRef"),ar:v("pAr"),tr:v("pTr"),alt:v("pAlt")||v("pTitle"),visible:$("#pVis").checked};
-  try{ await Store.saveProduct(p); }catch(err){ $("#pImgErr").textContent="This browser’s demo storage is full. Try a smaller photo, or connect Firebase."; return; }
+  try{ await Store.saveProduct(p); }catch(err){ $("#pImgErr").textContent=Store.mode==="firebase"?"Couldn’t save. Check your connection, or try a smaller photo.":"This browser’s demo storage is full. Try a smaller photo, or connect Firebase."; return; }
   toast(ppId?"Product updated":"Product added"); closePanels(); renderProducts(); loadShop();
 });
 function closePanels(){ document.querySelectorAll(".panel.on").forEach(p=>p.classList.remove("on")); opId=null; }

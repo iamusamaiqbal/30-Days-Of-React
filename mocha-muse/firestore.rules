@@ -1,0 +1,40 @@
+rules_version = '2';
+// Firestore security rules for the Mocha Muse shop (ink version).
+// Paste into Firebase console > Firestore Database > Rules, then Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // An admin is a signed-in user whose uid has a document in /admins.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admin list: each admin can check their own entry; only the console can change it.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Products: everyone sees visible paintings; only admins see hidden ones or make changes.
+    match /products/{id} {
+      allow read: if resource.data.visible == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Orders: anyone can place a new order with the expected fields; only admins can read or change them.
+    match /orders/{id} {
+      allow create: if request.resource.data.status == 'new'
+        && request.resource.data.keys().hasOnly(['no','name','phone','city','address','notes','kind','productId','title','price','status','created','email'])
+        && request.resource.data.keys().hasAll(['no','name','phone','city','address','title','status','created'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 120
+        && request.resource.data.phone is string && request.resource.data.phone.size() <= 40
+        && request.resource.data.city is string && request.resource.data.city.size() <= 120
+        && request.resource.data.address is string && request.resource.data.address.size() <= 600
+        && request.resource.data.notes is string && request.resource.data.notes.size() <= 1500
+        && request.resource.data.title is string && request.resource.data.title.size() <= 200
+        && request.resource.data.price is number;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

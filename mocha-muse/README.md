@@ -23,4 +23,13 @@ The ink version (`ink/index.html`) has a small shop admin:
 - **Orders:** customers place orders through a short form. The admin lists them with status filters (New, Confirmed, Painting, Shipped, Delivered, Cancelled) and opens each one for details, status changes, a studio note and a WhatsApp link.
 - **Order emails:** fill in `NOTIFY` near the top of the main script. With FormSubmit, put the receiving address in `formsubmit.to`; the first order sends a one-time activation email. EmailJS is also supported. Emails only send when the page runs on a real website (for example GitHub Pages or Netlify).
 
-**Demo storage:** until Firebase is connected, products, orders and the admin session are saved in the browser's local storage, so each device sees only its own data. All reads and writes go through the `Store` object in the script; replace its functions with Firebase Auth, Firestore and Storage to go live.
+**Storage:** the page connects to the Firebase project `brownique-art` (config near the top of the main script). Admin sign-in uses Firebase Authentication, and products and orders live in Firestore. Product photos are shrunk in the browser and saved inside each product's Firestore record, so Cloud Storage (which needs the paid Blaze plan) isn't required. Where Firebase can't be reached (for example the claude.ai preview, which blocks outside connections), the page falls back to an in-browser demo store with the demo login `admin` / `mocha123`.
+
+### Firebase setup (one time)
+
+1. **Firestore rules:** Firebase console > Firestore Database > Rules. Paste the contents of `firestore.rules` from this folder and click Publish.
+2. **Turn on email sign-in:** Authentication > Sign-in method > Email/Password > Enable.
+3. **Create your admin login:** Authentication > Users > Add user, with your email and a strong password. Copy the new user's **User UID**.
+4. **Mark it as an admin:** Firestore Database > Start collection `admins` > Document ID = the User UID you copied > add any field (for example `role` = `owner`) > Save.
+5. **Host the page:** for example Firebase Hosting or GitHub Pages. Then add that domain under Authentication > Settings > Authorized domains (Firebase Hosting domains are already there).
+6. **Add the starter paintings:** open the site, go to Admin, sign in, open Products and click "copy in the 5 paintings already on the site".
