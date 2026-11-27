@@ -587,6 +587,9 @@ const FIREBASE_CONFIG = {
   measurementId: "G-9W50V5PP24"
 };
 
+/* ---- Studio admins: Firebase Auth user UIDs allowed into the admin (must match firestore.rules). ---- */
+const ADMIN_UIDS = ["nSHXZzEjzrRZHyMMKeZJLOzuwLv1"];
+
 /* ---- New-order emails (free). Fill ONE of these in. ----
    FormSubmit: put the address that should receive orders in `to`. The first order sends you a
    one-time activation email from FormSubmit; click it, and every order after that arrives by email.
@@ -818,7 +821,7 @@ function makeFirebaseStore(){
   const db=firebase.firestore(app), auth=firebase.auth(app);
   const authReady=new Promise(res=>{ const un=auth.onAuthStateChanged(u=>{ un(); res(u); }); });
   const adminOf={};
-  async function isAdmin(u){ if(!u) return false; if(u.uid in adminOf) return adminOf[u.uid];
+  async function isAdmin(u){ if(!u) return false; if(ADMIN_UIDS.includes(u.uid)) return true; if(u.uid in adminOf) return adminOf[u.uid];
     try{ const d=await db.collection("admins").doc(u.uid).get(); adminOf[u.uid]=d.exists; }catch(e){ adminOf[u.uid]=false; } return adminOf[u.uid]; }
   const rows=q=>q.docs.map(d=>({id:d.id,...d.data()}));
   const clean=o=>{ const c={}; Object.keys(o).forEach(k=>{ if(o[k]!==undefined && k!=="id") c[k]=o[k]; }); return c; };

@@ -30,6 +30,6 @@ The ink version (`ink/index.html`) has a small shop admin:
 1. **Firestore rules:** Firebase console > Firestore Database > Rules. Paste the contents of `firestore.rules` from this folder and click Publish.
 2. **Turn on email sign-in:** Authentication > Sign-in method > Email/Password > Enable.
 3. **Create your admin login:** Authentication > Users > Add user, with your email and a strong password. Copy the new user's **User UID**.
-4. **Mark it as an admin:** Firestore Database > Start collection `admins` > Document ID = the User UID you copied > add any field (for example `role` = `owner`) > Save.
+4. **Mark it as an admin:** the studio owner's UID is already set in `firestore.rules` and in `ADMIN_UIDS` near the top of the main script. To add another admin later, either add their UID to both places, or create a document in a Firestore `admins` collection whose Document ID is their UID.
 5. **Host the page:** for example Firebase Hosting or GitHub Pages. Then add that domain under Authentication > Settings > Authorized domains (Firebase Hosting domains are already there).
 6. **Add the starter paintings:** open the site, go to Admin, sign in, open Products and click "copy in the 5 paintings already on the site".
