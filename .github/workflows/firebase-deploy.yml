@@ -1,46 +1,89 @@
-name: Deploy Mocha Muse to Firebase
+name: Mocha Muse app
 
 on:
   push:
     branches: [main, claude/confident-curie-hq332o]
     paths:
-      - "mocha-muse/**"
-      - "firebase.json"
-      - ".firebaserc"
+      - "mocha-muse-app/**"
       - ".github/workflows/firebase-deploy.yml"
+  pull_request:
+    paths:
+      - "mocha-muse-app/**"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: firebase-deploy
+  group: mocha-muse-${{ github.ref }}
   cancel-in-progress: false
 
+defaults:
+  run:
+    working-directory: mocha-muse-app
+
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mocha-muse-app/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run typecheck
+      - run: npm test
+      - name: Firestore security rules tests (local emulator)
+        run: npm run test:rules
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: mocha-muse-app/dist
+          retention-days: 3
 
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - name: Check the deploy key is set
         env:
           SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BROWNIQUE_ART }}
         run: |
           if [ -z "$SA" ]; then
-            echo "::error::Add the FIREBASE_SERVICE_ACCOUNT_BROWNIQUE_ART repository secret first (see mocha-muse/README.md, 'Deploying')."
+            echo "::error::Add the FIREBASE_SERVICE_ACCOUNT_BROWNIQUE_ART repository secret first (see mocha-muse-app/README.md, 'Deploying')."
             exit 1
           fi
-
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: mocha-muse-app/dist
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-
+          cache: npm
+          cache-dependency-path: mocha-muse-app/package-lock.json
+      - run: npm ci
       - name: Deploy hosting and Firestore rules
         env:
           SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BROWNIQUE_ART }}
         run: |
           printf '%s' "$SA" > "$RUNNER_TEMP/firebase-sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
-          npx --yes firebase-tools@13.35.1 deploy --only hosting,firestore:rules --project brownique-art --non-interactive
+          npx firebase deploy --only hosting,firestore:rules --project brownique-art --non-interactive
           rm -f "$RUNNER_TEMP/firebase-sa.json"
-
       - name: Site address
         run: echo "Live at https://brownique-art.web.app" >> "$GITHUB_STEP_SUMMARY"

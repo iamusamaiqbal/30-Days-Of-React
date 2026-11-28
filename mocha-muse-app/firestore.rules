@@ -1,0 +1,86 @@
+rules_version = '2';
+// Firestore security rules for the Mocha Muse shop.
+// Deployed automatically by .github/workflows/firebase-deploy.yml, and tested in tests/rules.
+// Anything not allowed below is denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+
+    // The studio owner: always an admin, and the only account that can change the team. Must match OWNER_UID in src/lib/firebase.ts.
+    function isOwner() { return signedIn() && request.auth.uid == "nSHXZzEjzrRZHyMMKeZJLOzuwLv1"; }
+
+    function isAdmin() {
+      return isOwner() || (signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function str(v, lo, hi) { return v is string && v.size() >= lo && v.size() <= hi; }
+    function money(v) { return v is int && v >= 0 && v <= 10000000; }
+
+    // ---------- products ----------
+    function validImage(img) {
+      return str(img, 9, 900000)
+        && (img.matches('builtin:[0-9]') || img[0:23] == 'data:image/jpeg;base64,');
+    }
+    function validProduct(d) {
+      return d.keys().hasOnly(['img', 'title', 'price', 'ar', 'tr', 'ref', 'alt', 'visible', 'created'])
+        && d.keys().hasAll(['img', 'title', 'price', 'ar', 'tr', 'ref', 'alt', 'visible', 'created'])
+        && validImage(d.img)
+        && str(d.title, 2, 120) && money(d.price)
+        && str(d.ar, 0, 300) && str(d.tr, 0, 400) && str(d.ref, 0, 120) && str(d.alt, 0, 200)
+        && d.visible is bool && d.created is int;
+    }
+    match /products/{id} {
+      allow read: if resource.data.visible == true || isAdmin();
+      allow create, update: if isAdmin() && validProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // ---------- orders ----------
+    // A ready-made order must carry the product's real price; custom pieces (and orders placed before the
+    // catalogue is set up, with no product id) are priced later by the studio, so they must say 0.
+    function honestPrice(d) {
+      return (d.kind == 'custom' && d.price == 0 && d.productId == '')
+        || (d.kind == 'ready' && d.productId == '' && d.price == 0)
+        || (d.kind == 'ready' && d.productId != ''
+            && exists(/databases/$(database)/documents/products/$(d.productId))
+            && get(/databases/$(database)/documents/products/$(d.productId)).data.visible == true
+            && get(/databases/$(database)/documents/products/$(d.productId)).data.price == d.price);
+    }
+    function validNewOrder(d) {
+      return d.keys().hasOnly(['no', 'name', 'phone', 'city', 'address', 'notes', 'kind', 'productId', 'title', 'price', 'status', 'created', 'email'])
+        && d.keys().hasAll(['no', 'name', 'phone', 'city', 'address', 'notes', 'kind', 'productId', 'title', 'price', 'status', 'created', 'email'])
+        && d.status == 'new'
+        && str(d.no, 7, 15) && d.no.matches('MM-[A-Z0-9]{4,12}')
+        && str(d.name, 2, 120)
+        && str(d.phone, 7, 40) && d.phone.matches('[+0-9 ()-]{7,40}')
+        && str(d.city, 2, 120) && str(d.address, 6, 600) && str(d.notes, 0, 1500)
+        && d.kind in ['ready', 'custom']
+        && str(d.productId, 0, 64) && str(d.title, 1, 200) && money(d.price)
+        && d.created is int && math.abs(d.created - request.time.toMillis()) < 600000
+        && d.email in ['sent', 'failed', 'off']
+        && honestPrice(d);
+    }
+    match /orders/{id} {
+      allow create: if validNewOrder(request.resource.data);
+      allow read, delete: if isAdmin();
+      // Admins may only move the status along or keep a studio note; the customer's details never change.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'studioNote'])
+        && request.resource.data.status in ['new', 'confirmed', 'painting', 'shipped', 'delivered', 'cancelled']
+        && (!('studioNote' in request.resource.data) || str(request.resource.data.studioNote, 0, 2000));
+    }
+
+    // ---------- team ----------
+    match /admins/{uid} {
+      allow read: if isAdmin();
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(['email', 'added', 'addedBy'])
+        && request.resource.data.keys().hasAll(['email', 'added', 'addedBy'])
+        && str(request.resource.data.email, 3, 200)
+        && request.resource.data.added is int
+        && request.resource.data.addedBy == request.auth.uid;
+      allow delete: if isOwner();
+    }
+  }
+}

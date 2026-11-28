@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /mocha-muse-app
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      firebase:
+        patterns: ["firebase", "@firebase/*", "firebase-tools"]
+      react:
+        patterns: ["react", "react-dom", "react-router", "@types/react*"]
+      tooling:
+        patterns: ["vite", "@vitejs/*", "vitest", "typescript"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
