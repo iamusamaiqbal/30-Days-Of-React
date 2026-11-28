@@ -4,17 +4,24 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // An admin is the studio owner's account, or any signed-in user whose uid has a document in /admins.
-    function isAdmin() {
-      return request.auth != null
-        && (request.auth.uid == "nSHXZzEjzrRZHyMMKeZJLOzuwLv1"
-            || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    // The studio owner: always an admin, and the only account that can add or remove admins.
+    // Must match OWNER_UID in ink/index.html.
+    function isOwner() {
+      return request.auth != null && request.auth.uid == "nSHXZzEjzrRZHyMMKeZJLOzuwLv1";
     }
 
-    // Admin list: each admin can check their own entry; only the console can change it.
+    // An admin is the owner, or a signed-in user whose uid has a document in /admins (managed from Admin > Team).
+    function isAdmin() {
+      return isOwner()
+        || (request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
     match /admins/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false;
+      allow read: if isAdmin();
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(['email','added','addedBy'])
+        && request.resource.data.email is string && request.resource.data.email.size() <= 200;
+      allow delete: if isOwner();
     }
 
     // Products: everyone sees visible paintings; only admins see hidden ones or make changes.

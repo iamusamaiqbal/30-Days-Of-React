@@ -321,6 +321,11 @@ footer .mark{width:40px;height:40px}
 .steps-st{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 16px}
 .steps-st button{border:1px solid rgba(21,18,16,.2);background:transparent;padding:7px 11px;font:500 12px var(--f-sans);cursor:pointer}
 .steps-st button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.team-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 14px;align-items:end;background:#fbf8f2;border:1px solid rgba(21,18,16,.1);padding:16px;margin-bottom:18px}
+.team-add .fld{grid-column:1}.team-add .btn{grid-column:2;grid-row:1;align-self:start;margin-top:22px}
+.team-add .tadv{grid-column:1/-1;font-size:14px;color:#4a3e35}.team-add .tadv summary{cursor:pointer;margin-bottom:8px}
+.team-add .note{grid-column:1/-1;margin:0;font-size:13px;color:#6a5d52}
+@media (max-width:600px){.team-add{grid-template-columns:1fr}.team-add .btn{grid-column:1;grid-row:auto;margin-top:0}}
 .toast{position:fixed;z-index:120;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--paper);padding:12px 18px;font:500 14px var(--f-sans);opacity:0;pointer-events:none;transition:opacity .3s,transform .4s}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .demo-bar{background:var(--paper-2);padding:10px 14px;font-size:13px;color:#4a3e35;margin-bottom:18px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
@@ -498,6 +503,7 @@ footer .mark{width:40px;height:40px}
       <div class="brand"><span class="mark" aria-hidden="true"></span><span>MOCHA MUSE</span></div>
       <button type="button" data-view="orders" aria-current="page">Orders <span class="badge" id="bNew" hidden>0</span></button>
       <button type="button" data-view="products">Products</button>
+      <button type="button" data-view="team" id="teamTab" hidden>Team</button>
       <span class="spacer"></span>
       <button type="button" id="adSite">View site ↗</button>
       <button type="button" id="adOut">Sign out</button>
@@ -512,6 +518,16 @@ footer .mark{width:40px;height:40px}
         <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Order</th><th>Date</th><th>Customer</th><th>Item</th><th>Total</th><th>Status</th></tr></thead><tbody id="oRows"></tbody></table></div>
         <div class="cards" id="oCards"></div>
         <div class="empty" id="oEmpty" hidden>No orders here yet.</div>
+      </section>
+      <section id="vTeam" hidden>
+        <div class="main-head"><div><h2>Team</h2><div class="sub">People who can manage paintings and orders. Only you, the owner, can change this list.</div></div></div>
+        <form class="team-add" id="tf" novalidate>
+          <div class="fld"><label for="tEmail">Email</label><input id="tEmail" type="email" autocomplete="off" placeholder="name@example.com" required><span class="err" id="tErr"></span></div>
+          <details class="tadv"><summary>They already have an account?</summary><div class="fld"><label for="tUid">Their User UID (Firebase console › Authentication › Users)</label><input id="tUid" autocomplete="off"></div></details>
+          <button class="btn fill sm" type="submit">Add admin <span>+</span></button>
+          <p class="note">We create their sign-in and Firebase emails them a link to set their own password.</p>
+        </form>
+        <table class="tbl"><thead><tr><th>Admin</th><th>Added</th><th></th></tr></thead><tbody id="tRows"></tbody></table>
       </section>
       <section id="vProducts" hidden>
         <div class="main-head"><div><h2>Products</h2><div class="sub" id="pSub"></div></div><button class="btn fill sm" type="button" id="pAdd">Add product <span>+</span></button></div>
@@ -587,8 +603,9 @@ const FIREBASE_CONFIG = {
   measurementId: "G-9W50V5PP24"
 };
 
-/* ---- Studio admins: Firebase Auth user UIDs allowed into the admin (must match firestore.rules). ---- */
-const ADMIN_UIDS = ["nSHXZzEjzrRZHyMMKeZJLOzuwLv1"];
+/* ---- Studio owner: this account is always an admin and is the only one who can add or remove admins
+   (must match OWNER in firestore.rules). Other admins are managed from Admin > Team. ---- */
+const OWNER_UID = "nSHXZzEjzrRZHyMMKeZJLOzuwLv1";
 
 /* ---- New-order emails (free). Fill ONE of these in. ----
    FormSubmit: put the address that should receive orders in `to`. The first order sends you a
@@ -811,7 +828,7 @@ const LocalStore=(()=>{
     async signIn(user,pass){ if(String(user).trim().toLowerCase()==="admin" && pass==="mocha123"){ const s={name:"Studio admin",at:Date.now()}; write(K.s,s); return s; } throw new Error("bad_login"); },
     async signOut(){ write(K.s,null); },
     async user(){ return read(K.s,null); },
-    async seed(){ }
+    async seed(){ }, async admins(){ return []; }, async addAdmin(){ throw new Error("local"); }, async removeAdmin(){ }
   };
 })();
 
@@ -821,7 +838,7 @@ function makeFirebaseStore(){
   const db=firebase.firestore(app), auth=firebase.auth(app);
   const authReady=new Promise(res=>{ const un=auth.onAuthStateChanged(u=>{ un(); res(u); }); });
   const adminOf={};
-  async function isAdmin(u){ if(!u) return false; if(ADMIN_UIDS.includes(u.uid)) return true; if(u.uid in adminOf) return adminOf[u.uid];
+  async function isAdmin(u){ if(!u) return false; if(u.uid===OWNER_UID) return true; if(u.uid in adminOf) return adminOf[u.uid];
     try{ const d=await db.collection("admins").doc(u.uid).get(); adminOf[u.uid]=d.exists; }catch(e){ adminOf[u.uid]=false; } return adminOf[u.uid]; }
   const rows=q=>q.docs.map(d=>({id:d.id,...d.data()}));
   const clean=o=>{ const c={}; Object.keys(o).forEach(k=>{ if(o[k]!==undefined && k!=="id") c[k]=o[k]; }); return c; };
@@ -839,7 +856,22 @@ function makeFirebaseStore(){
     async signIn(email,pass){ const c=await auth.signInWithEmailAndPassword(String(email).trim(),pass);
       if(!(await isAdmin(c.user))){ await auth.signOut(); const e=new Error("not_admin"); e.code="not_admin"; throw e; } return {name:c.user.email}; },
     async signOut(){ await auth.signOut(); },
-    async user(){ const u=auth.currentUser||await authReady; if(!u) return null; return (await isAdmin(u))?{name:u.email}:null; },
+    async user(){ const u=auth.currentUser||await authReady; if(!u) return null; return (await isAdmin(u))?{name:u.email,owner:u.uid===OWNER_UID}:null; },
+    async admins(){ return rows(await db.collection("admins").get()).sort((a,b)=>(a.added||0)-(b.added||0)); },
+    /* creates the sign-in account with a throwaway password (on a second app instance so the owner stays signed in),
+       then Firebase emails them a link to set their own password */
+    async addAdmin(email,uid){
+      email=String(email||"").trim().toLowerCase(); uid=String(uid||"").trim();
+      if(!uid){
+        const sec=(firebase.apps.find(a=>a.name==="team")||firebase.initializeApp(FIREBASE_CONFIG,"team")).auth();
+        const pw=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(36).padStart(2,"0")).join("")+"Aa1!";
+        try{ const c=await sec.createUserWithEmailAndPassword(email,pw); uid=c.user.uid; await sec.signOut(); }
+        catch(e){ if(e.code==="auth/email-already-in-use"){ const x=new Error("exists"); x.code="exists"; throw x; } throw e; }
+        try{ await auth.sendPasswordResetEmail(email); }catch(e){}
+      }
+      await db.collection("admins").doc(uid).set({email,added:Date.now(),addedBy:auth.currentUser.uid});
+      delete adminOf[uid]; return uid; },
+    async removeAdmin(uid){ await db.collection("admins").doc(uid).delete(); delete adminOf[uid]; },
     /* first run: copy the five paintings already on the site into Firestore */
     async seed(){ const b=db.batch(); PIECES.forEach((p,i)=>b.set(db.collection("products").doc("p"+(i+1)),{img:"builtin:"+i,title:p.title,ar:p.ar,tr:p.tr,ref:p.ref,price:p.price,alt:p.alt,visible:true,created:Date.now()-i})); await b.commit(); }
   };
@@ -848,7 +880,7 @@ function makeFirebaseStore(){
 /* Store picks Firebase when the page can reach it (a hosted site), and the in-browser demo store otherwise
    (for example the claude.ai preview, which blocks outside connections). */
 const Store={ mode:"local", impl:LocalStore };
-["products","saveProduct","deleteProduct","orders","createOrder","updateOrder","clearSamples","signIn","signOut","user","seed"].forEach(m=>{ Store[m]=async(...a)=>{ await Store.ready; return Store.impl[m](...a); }; });
+["products","saveProduct","deleteProduct","orders","createOrder","updateOrder","clearSamples","signIn","signOut","user","seed","admins","addAdmin","removeAdmin"].forEach(m=>{ Store[m]=async(...a)=>{ await Store.ready; return Store.impl[m](...a); }; });
 Store.ready=(async()=>{
   if(!(window.firebase && FIREBASE_CONFIG.apiKey)) return;
   try{
@@ -969,7 +1001,10 @@ async function renderAdmin(){
   if(!u){ setTimeout(()=>$("#lUser").focus(),60); return; }
   $("#adWho").textContent="Signed in as "+u.name;
   document.querySelectorAll(".side [data-view]").forEach(b=>b.setAttribute("aria-current",b.dataset.view===view?"page":"false"));
-  $("#vOrders").hidden=view!=="orders"; $("#vProducts").hidden=view!=="products";
+  $("#teamTab").hidden=!(Store.mode==="firebase" && u.owner); if(view==="team" && $("#teamTab").hidden) view="orders";
+  document.querySelectorAll(".side [data-view]").forEach(b=>b.setAttribute("aria-current",b.dataset.view===view?"page":"false"));
+  $("#vOrders").hidden=view!=="orders"; $("#vProducts").hidden=view!=="products"; $("#vTeam").hidden=view!=="team";
+  if(view==="team"){ renderTeam(u); return; }
   let orders=[]; try{ orders=await Store.orders(); }catch(e){ toast("Couldn’t load orders. Check your connection."); }
   $("#demoBar").querySelector("#clearSamples").hidden=!orders.some(o=>o.sample);
   if(view==="orders") renderOrders(orders); else renderProducts();
@@ -1040,6 +1075,27 @@ async function renderProducts(){
   });
 }
 $("#pAdd").onclick=()=>openProductPanel(null);
+/* ---------- team (owner only) ---------- */
+async function renderTeam(u){
+  let list=[]; try{ list=await Store.admins(); }catch(e){ toast("Couldn’t load the team. Check the Firestore rules are published."); }
+  const rowsHTML=[`<tr><td><b>${esc(u.name)}</b> <span class="sample">owner · you</span></td><td class="num">—</td><td></td></tr>`]
+    .concat(list.map(a=>`<tr data-uid="${esc(a.id)}"><td>${esc(a.email||a.id)}</td><td class="num">${a.added?esc(new Date(a.added).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})):"—"}</td><td style="text-align:right"><button class="lnk danger" type="button" data-rm>Remove</button></td></tr>`));
+  $("#tRows").innerHTML=rowsHTML.join("");
+  $("#tRows").querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{ const uid=b.closest("tr").dataset.uid;
+    if(!b.dataset.sure){ b.dataset.sure="1"; b.textContent="Tap again to remove"; setTimeout(()=>{ if(b.isConnected){ delete b.dataset.sure; b.textContent="Remove"; } },3000); return; }
+    try{ await Store.removeAdmin(uid); toast("Admin removed"); renderTeam(u); }catch(e){ toast("Couldn’t remove. Only the owner can change the team."); } });
+}
+$("#tf").addEventListener("submit",async e=>{ e.preventDefault(); const email=$("#tEmail").value.trim(), uid=$("#tUid").value.trim(), b=$("#tf button[type=submit]");
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ $("#tErr").textContent="Enter their email address."; return; }
+  b.disabled=true; $("#tErr").textContent="";
+  try{ await Store.addAdmin(email,uid); $("#tf").reset(); toast(uid?"Admin added":"Admin added. They’ll get an email to set their password."); renderTeam(await Store.user()); }
+  catch(err){ const c=err&&err.code||"";
+    $("#tErr").textContent= c==="exists"?"That email already has an account. Open “They already have an account?” and paste their User UID."
+      : /invalid-email/.test(c)?"That email address doesn’t look right."
+      : /operation-not-allowed/.test(c)?"Turn on Email/Password sign-in in Firebase (Authentication › Sign-in method)."
+      : /permission-denied/.test(c)?"Only the owner can add admins. Check the latest Firestore rules are published."
+      : "Couldn’t add them. Check your connection and try again."; }
+  b.disabled=false; });
 $("#seedBtn").onclick=async()=>{ try{ await Store.seed(); toast("Starter paintings added"); renderProducts(); loadShop(); }catch(e){ toast("Couldn’t add them. Check you’re signed in as an admin."); } };
 async function openProductPanel(id){
   const p=id?(await Store.products()).find(x=>x.id===id):null; ppId=id; ppImg=p?p.img:"";
